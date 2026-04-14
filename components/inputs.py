@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import streamlit as st
+
+from config.scoring_config import APP_COPY
 from services.advisor import PositionInputs
 from services.market_data import SearchMatch, search_tickers
 
@@ -15,8 +17,8 @@ def render_ticker_input() -> str:
             <div class="hero-eyebrow">Personal Stock Dashboard</div>
             <h1 class="hero-title">Trend Lens</h1>
             <div class="hero-subtitle">
-                Screen a stock through price trend, quality, valuation, and your own position sizing
-                rules in one polished local workspace.
+                Screen a stock through trend, quality, valuation, and your own position sizing rules
+                in one polished local workspace.
             </div>
         </div>
         """,
@@ -73,36 +75,79 @@ def _render_match_selector(matches: list[SearchMatch]) -> str:
 
 
 def render_position_inputs() -> PositionInputs:
-    """Render the sidebar-style portfolio inputs."""
+    """Render the portfolio-aware position input section."""
     st.markdown("")
     st.markdown(
         """
         <div class="section-title">Position Advisor Inputs</div>
-        <div class="section-subtitle" style="margin-bottom: 0.9rem;">
-            These settings personalize the buy, hold, or trim guidance without turning the app into
-            a trading system.
+        <div class="section-subtitle" style="margin-bottom: 0.85rem;">
+            Ground the recommendation in your actual portfolio so allocation and add-room math are more trustworthy.
         </div>
         """,
         unsafe_allow_html=True,
     )
-    col1, col2, col3, col4 = st.columns(4, gap="medium")
-    with col1:
-        shares_owned = st.number_input("Shares owned", min_value=0.0, value=0.0, step=1.0)
-    with col2:
-        average_cost_basis = st.number_input("Average cost basis ($)", min_value=0.0, value=0.0, step=1.0)
-    with col3:
+    with st.expander("How to use this", expanded=False):
+        st.write(APP_COPY["position_help"])
+
+    top = st.columns(3, gap="medium")
+    with top[0]:
+        total_portfolio_value = st.number_input(
+            "Total portfolio value ($)",
+            min_value=0.0,
+            value=100000.0,
+            step=1000.0,
+            help="Your full portfolio value across cash and holdings. This drives allocation math.",
+        )
+    with top[1]:
+        shares_owned = st.number_input(
+            "Shares owned",
+            min_value=0.0,
+            value=0.0,
+            step=1.0,
+            help="How many shares you already own of this stock.",
+        )
+    with top[2]:
+        average_cost_basis = st.number_input(
+            "Average cost basis ($)",
+            min_value=0.0,
+            value=0.0,
+            step=1.0,
+            help="Your average purchase price per share. Used for unrealized gain/loss.",
+        )
+
+    bottom = st.columns(3, gap="medium")
+    with bottom[0]:
         max_allocation_pct = st.number_input(
             "Max portfolio allocation (%)",
             min_value=1.0,
             max_value=100.0,
             value=10.0,
-            step=1.0,
+            step=0.5,
+            help="The hard ceiling you want this stock to reach in your portfolio.",
         )
-    with col4:
-        cash_available = st.number_input("Cash available to deploy ($)", min_value=0.0, value=0.0, step=100.0)
+    with bottom[1]:
+        target_position_size_pct = st.number_input(
+            "Target position size (%)",
+            min_value=0.0,
+            max_value=100.0,
+            value=0.0,
+            step=0.5,
+            help="Optional softer target below the max cap. Set to 0 to ignore it.",
+        )
+    with bottom[2]:
+        cash_available = st.number_input(
+            "Cash available to deploy ($)",
+            min_value=0.0,
+            value=0.0,
+            step=100.0,
+            help="Dry powder you are actually willing to allocate now.",
+        )
+
     return PositionInputs(
+        total_portfolio_value=total_portfolio_value,
         shares_owned=shares_owned,
         average_cost_basis=average_cost_basis,
-        max_allocation_pct=max_allocation_pct,
-        cash_available=cash_available,
+        max_portfolio_allocation_pct=max_allocation_pct,
+        cash_available_to_deploy=cash_available,
+        target_position_size_pct=target_position_size_pct if target_position_size_pct > 0 else None,
     )

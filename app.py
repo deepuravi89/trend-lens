@@ -7,7 +7,6 @@ import streamlit as st
 from components.charts import render_chart_suite
 from components.inputs import render_position_inputs, render_ticker_input
 from components.score_cards import render_header, render_score_section
-from config.scoring_config import APP_COPY
 from services.advisor import build_position_advice
 from services.market_data import get_stock_snapshot
 from services.scoring import build_score_bundle, finalize_total_score
@@ -29,7 +28,6 @@ def inject_styles() -> None:
             :root {
                 --bg: #09111f;
                 --panel: rgba(13, 24, 44, 0.82);
-                --panel-strong: rgba(18, 32, 59, 0.95);
                 --border: rgba(148, 163, 184, 0.18);
                 --text: #e6eefc;
                 --muted: #8fa5c5;
@@ -47,18 +45,13 @@ def inject_styles() -> None:
                 color: var(--text);
             }
 
-            [data-testid="stHeader"] {
-                background: rgba(0, 0, 0, 0);
-            }
-
-            [data-testid="stToolbar"] {
-                right: 1rem;
-            }
+            [data-testid="stHeader"] { background: transparent; }
+            [data-testid="stToolbar"] { right: 1rem; }
 
             .block-container {
                 padding-top: 2rem;
-                padding-bottom: 2.5rem;
-                max-width: 1320px;
+                padding-bottom: 2.8rem;
+                max-width: 1360px;
             }
 
             .hero-card,
@@ -71,45 +64,31 @@ def inject_styles() -> None:
                 box-shadow: 0 20px 45px rgba(3, 9, 20, 0.35);
             }
 
-            .hero-card {
-                padding: 1.75rem 1.75rem 1.2rem 1.75rem;
-                margin-bottom: 1.2rem;
-            }
+            .hero-card { padding: 1.75rem; margin-bottom: 1.2rem; }
+            .detail-card { padding: 1.25rem 1.3rem; height: 100%; }
+            .metric-card { padding: 1.2rem; min-height: 156px; }
 
-            .hero-eyebrow {
-                letter-spacing: 0.18em;
-                text-transform: uppercase;
+            .hero-eyebrow,
+            .metric-label {
                 color: var(--muted);
+                text-transform: uppercase;
+                letter-spacing: 0.16em;
                 font-size: 0.72rem;
-                margin-bottom: 0.65rem;
+                margin-bottom: 0.7rem;
             }
 
             .hero-title {
-                font-size: 2.2rem;
+                font-size: 2.35rem;
                 font-weight: 700;
                 margin: 0;
                 color: var(--text);
             }
 
-            .hero-subtitle {
-                margin-top: 0.55rem;
-                font-size: 1rem;
+            .hero-subtitle,
+            .section-subtitle,
+            .metric-caption {
                 color: var(--muted);
-                max-width: 58rem;
                 line-height: 1.6;
-            }
-
-            .metric-card {
-                padding: 1.3rem 1.25rem;
-                min-height: 162px;
-            }
-
-            .metric-label {
-                color: var(--muted);
-                text-transform: uppercase;
-                letter-spacing: 0.14em;
-                font-size: 0.72rem;
-                margin-bottom: 0.7rem;
             }
 
             .metric-value {
@@ -119,21 +98,15 @@ def inject_styles() -> None:
                 line-height: 1.1;
             }
 
-            .metric-caption {
-                color: var(--muted);
-                font-size: 0.94rem;
-                margin-top: 0.7rem;
-                line-height: 1.5;
-            }
-
             .pill {
                 display: inline-flex;
                 align-items: center;
                 border-radius: 999px;
-                padding: 0.3rem 0.8rem;
-                font-size: 0.86rem;
+                padding: 0.32rem 0.82rem;
+                font-size: 0.84rem;
                 font-weight: 600;
                 margin-top: 0.85rem;
+                white-space: nowrap;
             }
 
             .pill.green { background: rgba(61, 217, 164, 0.16); color: #aaf2d8; }
@@ -141,38 +114,87 @@ def inject_styles() -> None:
             .pill.red { background: rgba(255, 107, 122, 0.14); color: #ffc2cb; }
             .pill.blue { background: rgba(96, 165, 250, 0.14); color: #c7e1ff; }
 
-            .detail-card {
-                padding: 1.25rem 1.3rem;
-                height: 100%;
-            }
-
             .section-title {
                 color: var(--text);
                 font-weight: 700;
                 font-size: 1.02rem;
-                margin-bottom: 0.85rem;
+                margin-bottom: 0.75rem;
             }
 
-            .section-subtitle {
+            .factor-table {
+                display: grid;
+                gap: 0.75rem;
+                margin-top: 1rem;
+            }
+
+            .factor-row {
+                display: flex;
+                justify-content: space-between;
+                gap: 1rem;
+                padding: 0.9rem 0.95rem;
+                border-radius: 18px;
+                border: 1px solid rgba(148, 163, 184, 0.12);
+                background: rgba(7, 14, 27, 0.35);
+            }
+
+            .factor-main { min-width: 0; }
+            .factor-name { color: var(--text); font-weight: 600; margin-bottom: 0.22rem; }
+            .factor-detail { color: var(--muted); font-size: 0.92rem; line-height: 1.45; }
+            .factor-meta { display: flex; flex-direction: column; align-items: flex-end; min-width: 88px; }
+            .factor-points { color: var(--text); font-size: 1rem; font-weight: 700; }
+
+            .math-grid {
+                display: grid;
+                gap: 0.7rem;
+                margin-top: 0.95rem;
+            }
+
+            .math-row {
+                display: flex;
+                justify-content: space-between;
+                gap: 1rem;
+                align-items: center;
+                padding: 0.8rem 0.95rem;
+                border-radius: 16px;
+                background: rgba(7, 14, 27, 0.35);
+                border: 1px solid rgba(148, 163, 184, 0.12);
+            }
+
+            .math-row span { color: var(--muted); }
+            .math-row strong { color: var(--text); text-align: right; }
+
+            .mini-stat {
+                min-width: 132px;
+                padding: 0.75rem 0.9rem;
+                border-radius: 18px;
+                background: rgba(7, 14, 27, 0.35);
+                border: 1px solid rgba(148, 163, 184, 0.12);
+            }
+
+            .mini-stat span {
+                display: block;
                 color: var(--muted);
-                line-height: 1.6;
-                margin-bottom: 1rem;
+                font-size: 0.74rem;
+                text-transform: uppercase;
+                letter-spacing: 0.12em;
+                margin-bottom: 0.38rem;
+            }
+
+            .mini-stat strong {
+                color: var(--text);
+                font-size: 1.1rem;
             }
 
             .explanation-list {
                 margin: 0;
-                padding-left: 1.1rem;
+                padding-left: 1.15rem;
                 color: var(--text);
             }
+            .explanation-list li { margin-bottom: 0.52rem; line-height: 1.5; color: #d8e3f7; }
 
-            .explanation-list li {
-                margin-bottom: 0.55rem;
-                line-height: 1.5;
-                color: #d8e3f7;
-            }
-
-            .stTextInput > div > div,
-            .stNumberInput > div > div > input {
+            .stTextInput input,
+            .stNumberInput input,
+            .stSelectbox div[data-baseweb="select"] > div {
                 background: rgba(11, 19, 36, 0.95);
                 color: var(--text);
                 border-radius: 14px;
@@ -189,16 +211,7 @@ def inject_styles() -> None:
                 padding: 0.72rem 1rem;
             }
 
-            .chart-shell {
-                padding: 1rem 1rem 0.35rem 1rem;
-            }
-
-            .footer-note {
-                color: var(--muted);
-                font-size: 0.88rem;
-                line-height: 1.5;
-                margin-top: 0.75rem;
-            }
+            .chart-shell { padding: 1rem 1rem 0.35rem 1rem; }
         </style>
         """,
         unsafe_allow_html=True,
@@ -230,33 +243,7 @@ def main() -> None:
 
     render_score_section(snapshot, scores, advice)
     render_chart_suite(snapshot)
-
-    lower_left, lower_right = st.columns([1.2, 1], gap="large")
-
-    with lower_left:
-        st.markdown('<div class="detail-card">', unsafe_allow_html=True)
-        st.markdown('<div class="section-title">Why The Model Landed Here</div>', unsafe_allow_html=True)
-        st.markdown(
-            f'<div class="section-subtitle">{APP_COPY["detailed_explainer"]}</div>',
-            unsafe_allow_html=True,
-        )
-        st.markdown(scores.render_full_explanation(), unsafe_allow_html=True)
-        st.markdown("</div>", unsafe_allow_html=True)
-
-    with lower_right:
-        st.markdown('<div class="detail-card">', unsafe_allow_html=True)
-        st.markdown('<div class="section-title">Position Context</div>', unsafe_allow_html=True)
-        st.markdown(
-            f'<div class="section-subtitle">{advice.explanation}</div>',
-            unsafe_allow_html=True,
-        )
-        st.markdown(advice.render_bullets(), unsafe_allow_html=True)
-        st.markdown(
-            '<div class="footer-note">This dashboard is a personal decision-support tool. '
-            "It is not a trading bot and not financial advice.</div>",
-            unsafe_allow_html=True,
-        )
-        st.markdown("</div>", unsafe_allow_html=True)
+    st.caption("Trend Lens is a local decision-support tool for personal investing research. It is not financial advice.")
 
 
 if __name__ == "__main__":

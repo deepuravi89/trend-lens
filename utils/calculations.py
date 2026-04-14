@@ -1,6 +1,8 @@
-"""Calculation helpers for indicators and reusable signal math."""
+"""Calculation helpers for indicators and reusable portfolio math."""
 
 from __future__ import annotations
+
+import math
 
 import numpy as np
 import pandas as pd
@@ -37,4 +39,20 @@ def add_indicators(history: pd.DataFrame) -> pd.DataFrame:
     frame["RSI_14"] = compute_rsi(frame["Close"], period=14)
     macd = compute_macd(frame["Close"])
     frame = pd.concat([frame, macd], axis=1)
+    frame["DIST_FROM_50DMA"] = np.where(frame["SMA_50"] != 0, frame["Close"] / frame["SMA_50"] - 1, np.nan)
+    frame["DIST_FROM_200DMA"] = np.where(frame["SMA_200"] != 0, frame["Close"] / frame["SMA_200"] - 1, np.nan)
     return frame.dropna(how="all")
+
+
+def safe_ratio(numerator: float | None, denominator: float | None) -> float | None:
+    """Return a ratio or None when the denominator is empty."""
+    if numerator is None or denominator in (None, 0):
+        return None
+    return numerator / denominator
+
+
+def floor_shares(amount: float | None, price: float | None) -> int:
+    """Estimate whole shares purchasable with the supplied amount."""
+    if amount is None or price in (None, 0) or amount <= 0:
+        return 0
+    return max(0, math.floor(amount / price))

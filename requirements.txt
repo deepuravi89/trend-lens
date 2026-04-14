@@ -3,3 +3,4 @@ plotly>=5.20,<6
 yfinance>=0.2.40,<1
 pandas>=2.2,<3
 numpy>=1.26,<3
+pytest>=8,<9
