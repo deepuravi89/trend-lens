@@ -71,6 +71,9 @@ POSITION_THRESHOLDS = {
     "strong_add_score": 82,
     "hold_floor": 58,
     "trim_floor": 45,
+    "oversized_buffer_pct": 0.002,
+    "near_target_buffer_pct": 0.85,
+    "limited_room_pct_of_portfolio": 0.015,
 }
 
 CONFIDENCE_THRESHOLDS = {

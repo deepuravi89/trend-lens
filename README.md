@@ -92,12 +92,45 @@ The app uses these fields to estimate:
 - Shares you can add before reaching your allocation cap
 - Suggested shares to add now when the recommendation supports adding
 
+## How Allocation Is Calculated
+
+Trend Lens uses true portfolio-based sizing math for the Position Advisor:
+
+- `Current position value = shares owned × current price`
+- `Current allocation % = current position value / total portfolio value`
+- `Max allowed position value = total portfolio value × max portfolio allocation %`
+- `Remaining room to add = max allowed position value - current position value`
+- `Cash-limited add amount = min(cash available to deploy, remaining room to add)`
+- `Estimated shares can add now = floor(cash-limited add amount / current price)`
+
+If you provide a target position size:
+
+- `Target position value = total portfolio value × target position size %`
+- `Gap to target = target position value - current position value`
+
+## Position Advisor Labels
+
+- `Add`:
+  Strong overall setup, supportive technicals, and real room under your cap.
+- `Add Small`:
+  Decent setup, but either remaining room, score quality, or conviction is more limited.
+- `Add on Pullback`:
+  Strong stock overall, but technically extended enough that waiting may improve entry quality.
+- `Hold`:
+  Reasonable setup with no urgent action, or a position already near target size.
+- `Trim`:
+  Position is oversized, technically stretched, or weaker than its current weight justifies.
+- `Avoid New Buy`:
+  Setup lacks enough technical or fundamental support for fresh capital.
+
 ## Known Limitations
 
 - The app relies on Yahoo Finance field coverage through `yfinance`, which can be incomplete or noisy.
 - Some companies and ETFs have sparse or inconsistent fundamental fields.
 - The scoring model is transparent and intentionally simple; it is a decision-support framework, not a predictive model.
 - Suggested add sizes are practical heuristics, not optimization outputs.
+- If total portfolio value is missing or zero, allocation-aware advice is intentionally reduced.
+- If average cost basis is missing while shares are held, unrealized gain/loss math cannot be computed accurately.
 
 ## Not Financial Advice
 

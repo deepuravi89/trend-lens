@@ -77,53 +77,54 @@ def _render_match_selector(matches: list[SearchMatch]) -> str:
 def render_position_inputs() -> PositionInputs:
     """Render the portfolio-aware position input section."""
     st.markdown("")
+    st.markdown('<div class="input-shell">', unsafe_allow_html=True)
     st.markdown(
         """
         <div class="section-title">Position Advisor Inputs</div>
-        <div class="section-subtitle" style="margin-bottom: 0.85rem;">
-            Ground the recommendation in your actual portfolio so allocation and add-room math are more trustworthy.
+        <div class="input-grid-note">
+            Add your portfolio context once, then let Trend Lens translate the stock score into sizing-aware guidance.
         </div>
         """,
         unsafe_allow_html=True,
     )
-    with st.expander("How to use this", expanded=False):
+    with st.expander("How these fields are used", expanded=False):
         st.write(APP_COPY["position_help"])
 
     top = st.columns(3, gap="medium")
     with top[0]:
         total_portfolio_value = st.number_input(
-            "Total portfolio value ($)",
+            "Portfolio value used for sizing ($)",
             min_value=0.0,
             value=100000.0,
             step=1000.0,
-            help="Your full portfolio value across cash and holdings. This drives allocation math.",
+            help="Use the total value of the investable portfolio this position should be sized against. This is what makes the allocation math real.",
         )
     with top[1]:
         shares_owned = st.number_input(
-            "Shares owned",
+            "Current shares owned",
             min_value=0.0,
             value=0.0,
             step=1.0,
-            help="How many shares you already own of this stock.",
+            help="How many shares you currently own. Use 0 if you are evaluating a new position.",
         )
     with top[2]:
         average_cost_basis = st.number_input(
-            "Average cost basis ($)",
+            "Average cost per share ($)",
             min_value=0.0,
             value=0.0,
             step=1.0,
-            help="Your average purchase price per share. Used for unrealized gain/loss.",
+            help="Your average purchase price per share. This is used to estimate unrealized gain or loss.",
         )
 
     bottom = st.columns(3, gap="medium")
     with bottom[0]:
         max_allocation_pct = st.number_input(
-            "Max portfolio allocation (%)",
+            "Max position cap (%)",
             min_value=1.0,
             max_value=100.0,
             value=10.0,
             step=0.5,
-            help="The hard ceiling you want this stock to reach in your portfolio.",
+            help="Your hard ceiling for this position as a percentage of total portfolio value.",
         )
     with bottom[1]:
         target_position_size_pct = st.number_input(
@@ -132,16 +133,17 @@ def render_position_inputs() -> PositionInputs:
             max_value=100.0,
             value=0.0,
             step=0.5,
-            help="Optional softer target below the max cap. Set to 0 to ignore it.",
+            help="Optional softer target if you are still building the position. Set to 0 to ignore it.",
         )
     with bottom[2]:
         cash_available = st.number_input(
-            "Cash available to deploy ($)",
+            "Cash available now ($)",
             min_value=0.0,
             value=0.0,
             step=100.0,
-            help="Dry powder you are actually willing to allocate now.",
+            help="Dry powder you would realistically be willing to use right now for this idea.",
         )
+    st.markdown("</div>", unsafe_allow_html=True)
 
     return PositionInputs(
         total_portfolio_value=total_portfolio_value,

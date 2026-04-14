@@ -27,10 +27,13 @@ def inject_styles() -> None:
         <style>
             :root {
                 --bg: #09111f;
-                --panel: rgba(13, 24, 44, 0.82);
-                --border: rgba(148, 163, 184, 0.18);
+                --panel: rgba(12, 23, 43, 0.84);
+                --panel-strong: rgba(16, 30, 56, 0.96);
+                --panel-soft: rgba(8, 16, 30, 0.45);
+                --border: rgba(148, 163, 184, 0.17);
                 --text: #e6eefc;
-                --muted: #8fa5c5;
+                --muted: #8ca2c3;
+                --muted-strong: #b7c8e3;
                 --green: #3dd9a4;
                 --amber: #ffb648;
                 --red: #ff6b7a;
@@ -49,7 +52,7 @@ def inject_styles() -> None:
             [data-testid="stToolbar"] { right: 1rem; }
 
             .block-container {
-                padding-top: 2rem;
+                padding-top: 1.5rem;
                 padding-bottom: 2.8rem;
                 max-width: 1360px;
             }
@@ -64,8 +67,14 @@ def inject_styles() -> None:
                 box-shadow: 0 20px 45px rgba(3, 9, 20, 0.35);
             }
 
-            .hero-card { padding: 1.75rem; margin-bottom: 1.2rem; }
-            .detail-card { padding: 1.25rem 1.3rem; height: 100%; }
+            .hero-card {
+                padding: 1.8rem 1.8rem 1.55rem 1.8rem;
+                margin-bottom: 1rem;
+                background:
+                    radial-gradient(circle at top right, rgba(96, 165, 250, 0.14), transparent 32%),
+                    linear-gradient(180deg, rgba(16, 30, 56, 0.92), rgba(11, 21, 40, 0.86));
+            }
+            .detail-card { padding: 1.3rem 1.35rem; height: 100%; }
             .metric-card { padding: 1.2rem; min-height: 156px; }
 
             .hero-eyebrow,
@@ -78,10 +87,11 @@ def inject_styles() -> None:
             }
 
             .hero-title {
-                font-size: 2.35rem;
+                font-size: 2.45rem;
                 font-weight: 700;
                 margin: 0;
                 color: var(--text);
+                letter-spacing: -0.03em;
             }
 
             .hero-subtitle,
@@ -91,22 +101,29 @@ def inject_styles() -> None:
                 line-height: 1.6;
             }
 
+            .hero-subtitle {
+                max-width: 56rem;
+                font-size: 1rem;
+            }
+
             .metric-value {
-                font-size: 2rem;
+                font-size: 2.15rem;
                 font-weight: 700;
                 color: var(--text);
                 line-height: 1.1;
+                letter-spacing: -0.03em;
             }
 
             .pill {
                 display: inline-flex;
                 align-items: center;
                 border-radius: 999px;
-                padding: 0.32rem 0.82rem;
-                font-size: 0.84rem;
+                padding: 0.35rem 0.82rem;
+                font-size: 0.8rem;
                 font-weight: 600;
-                margin-top: 0.85rem;
+                margin-top: 0.75rem;
                 white-space: nowrap;
+                letter-spacing: 0.01em;
             }
 
             .pill.green { background: rgba(61, 217, 164, 0.16); color: #aaf2d8; }
@@ -114,38 +131,64 @@ def inject_styles() -> None:
             .pill.red { background: rgba(255, 107, 122, 0.14); color: #ffc2cb; }
             .pill.blue { background: rgba(96, 165, 250, 0.14); color: #c7e1ff; }
 
+            .section-kicker {
+                color: var(--muted-strong);
+                font-size: 0.92rem;
+                line-height: 1.6;
+                margin-top: 0.35rem;
+            }
+
             .section-title {
                 color: var(--text);
                 font-weight: 700;
-                font-size: 1.02rem;
+                font-size: 1.05rem;
                 margin-bottom: 0.75rem;
+                letter-spacing: -0.01em;
             }
 
             .factor-table {
                 display: grid;
-                gap: 0.75rem;
-                margin-top: 1rem;
+                gap: 0.68rem;
+                margin-top: 1.05rem;
             }
 
             .factor-row {
                 display: flex;
                 justify-content: space-between;
                 gap: 1rem;
-                padding: 0.9rem 0.95rem;
+                padding: 0.92rem 0.98rem;
                 border-radius: 18px;
                 border: 1px solid rgba(148, 163, 184, 0.12);
-                background: rgba(7, 14, 27, 0.35);
+                background: rgba(7, 14, 27, 0.4);
+            }
+
+            .factor-row.positive,
+            .math-row.positive {
+                border-color: rgba(61, 217, 164, 0.18);
+                background: linear-gradient(180deg, rgba(12, 31, 33, 0.65), rgba(7, 14, 27, 0.45));
+            }
+
+            .factor-row.caution,
+            .math-row.caution {
+                border-color: rgba(255, 182, 72, 0.2);
+                background: linear-gradient(180deg, rgba(36, 26, 12, 0.45), rgba(7, 14, 27, 0.45));
+            }
+
+            .factor-row.negative,
+            .math-row.negative {
+                border-color: rgba(255, 107, 122, 0.2);
+                background: linear-gradient(180deg, rgba(36, 17, 24, 0.5), rgba(7, 14, 27, 0.45));
             }
 
             .factor-main { min-width: 0; }
             .factor-name { color: var(--text); font-weight: 600; margin-bottom: 0.22rem; }
-            .factor-detail { color: var(--muted); font-size: 0.92rem; line-height: 1.45; }
-            .factor-meta { display: flex; flex-direction: column; align-items: flex-end; min-width: 88px; }
-            .factor-points { color: var(--text); font-size: 1rem; font-weight: 700; }
+            .factor-detail { color: var(--muted); font-size: 0.9rem; line-height: 1.45; }
+            .factor-meta { display: flex; flex-direction: column; align-items: flex-end; min-width: 92px; }
+            .factor-points { color: var(--text); font-size: 1.02rem; font-weight: 700; }
 
             .math-grid {
                 display: grid;
-                gap: 0.7rem;
+                gap: 0.64rem;
                 margin-top: 0.95rem;
             }
 
@@ -154,9 +197,9 @@ def inject_styles() -> None:
                 justify-content: space-between;
                 gap: 1rem;
                 align-items: center;
-                padding: 0.8rem 0.95rem;
+                padding: 0.82rem 0.98rem;
                 border-radius: 16px;
-                background: rgba(7, 14, 27, 0.35);
+                background: rgba(7, 14, 27, 0.42);
                 border: 1px solid rgba(148, 163, 184, 0.12);
             }
 
@@ -167,7 +210,7 @@ def inject_styles() -> None:
                 min-width: 132px;
                 padding: 0.75rem 0.9rem;
                 border-radius: 18px;
-                background: rgba(7, 14, 27, 0.35);
+                background: rgba(7, 14, 27, 0.42);
                 border: 1px solid rgba(148, 163, 184, 0.12);
             }
 
@@ -182,7 +225,7 @@ def inject_styles() -> None:
 
             .mini-stat strong {
                 color: var(--text);
-                font-size: 1.1rem;
+                font-size: 1.15rem;
             }
 
             .explanation-list {
@@ -191,6 +234,20 @@ def inject_styles() -> None:
                 color: var(--text);
             }
             .explanation-list li { margin-bottom: 0.52rem; line-height: 1.5; color: #d8e3f7; }
+
+            .input-shell {
+                background: rgba(10, 20, 37, 0.55);
+                border: 1px solid rgba(148, 163, 184, 0.12);
+                border-radius: 22px;
+                padding: 1.2rem 1.2rem 0.5rem 1.2rem;
+                margin-bottom: 1.1rem;
+            }
+
+            .input-grid-note {
+                color: var(--muted);
+                font-size: 0.92rem;
+                margin-bottom: 0.95rem;
+            }
 
             .stTextInput input,
             .stNumberInput input,
@@ -211,7 +268,30 @@ def inject_styles() -> None:
                 padding: 0.72rem 1rem;
             }
 
+            .stExpander {
+                border: 1px solid rgba(148, 163, 184, 0.12);
+                border-radius: 16px;
+                background: rgba(7, 14, 27, 0.3);
+            }
+
             .chart-shell { padding: 1rem 1rem 0.35rem 1rem; }
+
+            @media (max-width: 1080px) {
+                .hero-title { font-size: 2.05rem; }
+                .metric-value { font-size: 1.9rem; }
+                .factor-row,
+                .math-row { flex-direction: column; align-items: flex-start; }
+                .factor-meta { align-items: flex-start; min-width: 0; }
+                .mini-stat { min-width: calc(50% - 0.5rem); }
+            }
+
+            @media (max-width: 760px) {
+                .block-container { padding-top: 1rem; padding-left: 0.9rem; padding-right: 0.9rem; }
+                .hero-card, .detail-card, .metric-card { border-radius: 20px; }
+                .hero-card { padding: 1.35rem; }
+                .hero-title { font-size: 1.85rem; }
+                .mini-stat { min-width: 100%; }
+            }
         </style>
         """,
         unsafe_allow_html=True,
