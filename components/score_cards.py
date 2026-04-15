@@ -14,6 +14,7 @@ from utils.formatters import (
     format_percent_plain,
     truncate_text,
 )
+from utils.metric_help import format_metric_inline_label, render_metric_guide_html
 
 
 VERDICT_CLASSES = {
@@ -65,6 +66,7 @@ def render_score_section(snapshot: StockSnapshot, scores: ScoreBundle, advice: P
         render_position_math_panel(advice)
     with explain_col:
         render_detail_explainer(scores)
+    render_metric_guide()
 
 
 def render_top_summary(snapshot: StockSnapshot, scores: ScoreBundle) -> None:
@@ -117,6 +119,9 @@ def render_section_card(title: str, score: float, max_score: float, summary: str
         ),
         unsafe_allow_html=True,
     )
+    guide_keys = [factor.key for factor in factors if factor.key]
+    with st.expander(f"Learn these {title.lower()} metrics", expanded=False):
+        st.markdown(render_metric_guide_html(unique_metric_keys(guide_keys)), unsafe_allow_html=True)
 
 
 def render_position_advisor_card(advice: PositionAdvice) -> None:
@@ -149,6 +154,21 @@ def render_position_advisor_card(advice: PositionAdvice) -> None:
         ),
         unsafe_allow_html=True,
     )
+    with st.expander("Learn these position metrics", expanded=False):
+        st.markdown(
+            render_metric_guide_html(
+                [
+                    "current_allocation_pct",
+                    "remaining_room_to_add",
+                    "cash_limited_add_amount",
+                    "estimated_shares_can_add",
+                    "unrealized_gain_loss_pct",
+                    "max_position_cap",
+                    "target_position_size",
+                ]
+            ),
+            unsafe_allow_html=True,
+        )
 
 
 def render_position_math_panel(advice: PositionAdvice) -> None:
@@ -171,25 +191,25 @@ def render_position_math_panel(advice: PositionAdvice) -> None:
     )
 
     rows = [
-        ("Current allocation", allocation_display),
-        ("Current position value", format_currency_full(metrics.current_position_value)),
-        ("Average cost basis", format_currency_full(metrics.average_cost_basis) if metrics.average_cost_basis > 0 else "N/A"),
-        ("Unrealized gain/loss $", gain_loss_value),
-        ("Unrealized gain/loss %", gain_loss_pct),
-        ("Max allowed position value", max_position_value),
-        ("Remaining room before cap", room_left),
-        ("Cash-limited add amount", cash_limited_add),
-        ("Estimated shares can add now", f"{metrics.estimated_shares_can_add} shares"),
+        ("current_allocation_pct", "Current allocation", allocation_display),
+        ("current_position_value", "Current position value", format_currency_full(metrics.current_position_value)),
+        ("text", "Average cost basis", format_currency_full(metrics.average_cost_basis) if metrics.average_cost_basis > 0 else "N/A"),
+        ("unrealized_gain_loss_dollars", "Unrealized gain/loss $", gain_loss_value),
+        ("unrealized_gain_loss_pct", "Unrealized gain/loss %", gain_loss_pct),
+        ("max_position_cap", "Max allowed position value", max_position_value),
+        ("remaining_room_to_add", "Remaining room before cap", room_left),
+        ("cash_limited_add_amount", "Cash-limited add amount", cash_limited_add),
+        ("estimated_shares_can_add", "Estimated shares can add now", f"{metrics.estimated_shares_can_add} shares"),
     ]
     if metrics.target_position_size_pct is not None:
         rows.extend(
             [
-                ("Target position value", target_value),
-                ("Gap to target", target_gap),
+                ("target_position_size", "Target position value", target_value),
+                ("target_position_size", "Gap to target", target_gap),
             ]
         )
-    rows.append(("Suggested action", advice.recommendation))
-    rows_html = "".join(render_math_row(label, value) for label, value in rows)
+    rows.append(("text", "Suggested action", advice.recommendation))
+    rows_html = "".join(render_math_row(key, label, value) for key, label, value in rows)
     st.markdown(
         (
             '<div class="detail-card">'
@@ -214,11 +234,11 @@ def render_detail_explainer(scores: ScoreBundle) -> None:
             '<div class="section-subtitle">Each factor shows its point contribution and a short interpretation so the score stays inspectable.</div>'
             '<div class="metric-label" style="margin-top:0.5rem;">Technical Drivers</div>'
             '<ul class="explanation-list">'
-            f'{"".join(f"<li>{factor.label}: {factor.display_points} points. {factor.detail}</li>" for factor in scores.technical.factors)}'
+            f'{"".join(f"<li>{format_metric_inline_label(factor.key, factor.label)}: {factor.display_points} points. {factor.detail}</li>" for factor in scores.technical.factors)}'
             "</ul>"
             '<div class="metric-label" style="margin-top:1rem;">Fundamental Drivers</div>'
             '<ul class="explanation-list">'
-            f'{"".join(f"<li>{factor.label}: {factor.display_points} points. {factor.detail}</li>" for factor in scores.fundamental.factors)}'
+            f'{"".join(f"<li>{format_metric_inline_label(factor.key, factor.label)}: {factor.display_points} points. {factor.detail}</li>" for factor in scores.fundamental.factors)}'
             "</ul>"
             "</div>"
         ),
@@ -232,7 +252,7 @@ def render_factor_row(factor: FactorScore) -> str:
     status_class = VERDICT_CLASSES.get("High" if tone == "positive" else "Medium" if tone == "caution" else "Low", "blue")
     return (
         f'<div class="factor-row {tone}">'
-        f'<div class="factor-main"><div class="factor-name">{factor.label}</div><div class="factor-detail">{factor.detail}</div></div>'
+        f'<div class="factor-main"><div class="factor-name">{format_metric_inline_label(factor.key, factor.label)}</div><div class="factor-detail">{factor.detail}</div></div>'
         f'<div class="factor-meta"><span class="factor-points">{factor.display_points}</span><span class="pill {status_class}" style="margin-top:0.35rem;">{factor.status}</span></div>'
         "</div>"
     )
@@ -252,7 +272,7 @@ def factor_tone(status: str) -> str:
     return "negative"
 
 
-def render_math_row(label: str, value: str) -> str:
+def render_math_row(key: str, label: str, value: str) -> str:
     """Render a math row with light semantic emphasis."""
     tone = "positive"
     if any(word in label.lower() for word in {"unrealized gain/loss", "suggested action"}):
@@ -264,7 +284,88 @@ def render_math_row(label: str, value: str) -> str:
         tone = "caution"
     return (
         f'<div class="math-row {tone}">'
-        f'<span>{label}</span>'
+        f'<span>{format_metric_inline_label(key, label) if key != "text" else label}</span>'
         f'<strong>{value}</strong>'
         "</div>"
     )
+
+
+def render_metric_guide() -> None:
+    """Render a grouped glossary view near the bottom of the dashboard."""
+    with st.expander("Metric guide", expanded=False):
+        st.markdown(
+            '<div class="section-subtitle" style="margin-bottom:0.8rem;">Short definitions and quick reads for the main metrics used throughout the dashboard.</div>',
+            unsafe_allow_html=True,
+        )
+        st.markdown('<div class="metric-label">Technical</div>', unsafe_allow_html=True)
+        st.markdown(
+            render_metric_guide_html(
+                [
+                    "price_vs_50dma",
+                    "price_vs_200dma",
+                    "sma_50",
+                    "sma_200",
+                    "dist_from_50dma",
+                    "dist_from_200dma",
+                    "rsi_14",
+                    "macd",
+                    "macd_signal",
+                    "macd_histogram",
+                    "avg_volume_20",
+                    "volume_ratio",
+                    "trend_alignment",
+                ]
+            ),
+            unsafe_allow_html=True,
+        )
+        st.markdown('<div class="metric-label" style="margin-top:1rem;">Fundamental</div>', unsafe_allow_html=True)
+        st.markdown(
+            render_metric_guide_html(
+                [
+                    "trailing_pe",
+                    "forward_pe",
+                    "peg_ratio",
+                    "return_on_equity",
+                    "debt_to_equity",
+                    "revenue_growth",
+                    "earnings_growth",
+                    "free_cash_flow",
+                    "operating_cash_flow",
+                    "gross_margin",
+                    "operating_margin",
+                    "profit_margin",
+                    "data_completeness",
+                    "confidence",
+                ]
+            ),
+            unsafe_allow_html=True,
+        )
+        st.markdown('<div class="metric-label" style="margin-top:1rem;">Position</div>', unsafe_allow_html=True)
+        st.markdown(
+            render_metric_guide_html(
+                [
+                    "current_position_value",
+                    "current_allocation_pct",
+                    "max_position_cap",
+                    "target_position_size",
+                    "remaining_room_to_add",
+                    "cash_limited_add_amount",
+                    "estimated_shares_can_add",
+                    "unrealized_gain_loss_dollars",
+                    "unrealized_gain_loss_pct",
+                ]
+            ),
+            unsafe_allow_html=True,
+        )
+
+
+def unique_metric_keys(keys: list[str]) -> list[str]:
+    """Deduplicate metric keys while preserving order."""
+    seen: set[str] = set()
+    ordered: list[str] = []
+    for key in keys:
+        if key in seen:
+            continue
+        seen.add(key)
+        ordered.append(key)
+    return ordered

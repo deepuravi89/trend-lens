@@ -21,6 +21,7 @@ from utils.formatters import format_currency, format_number, format_percent, for
 class FactorScore:
     """A single factor contribution inside a section."""
 
+    key: str
     label: str
     points: float
     max_points: float
@@ -267,7 +268,13 @@ def build_quick_summary(technical: SectionScore, fundamental: SectionScore) -> s
 
 def score_binary_factor(label: str, condition: bool, max_points: float, positive_detail: str, negative_detail: str) -> FactorScore:
     """Score a yes/no factor."""
+    key_map = {
+        "Price vs 200DMA": "price_vs_200dma",
+        "Price vs 50DMA": "price_vs_50dma",
+        "50DMA vs 200DMA": "trend_alignment",
+    }
     return FactorScore(
+        key=key_map.get(label, label.lower().replace(" ", "_")),
         label=label,
         points=max_points if condition else 0.0,
         max_points=max_points,
@@ -281,24 +288,24 @@ def score_rsi_factor(rsi: float) -> FactorScore:
     """Score RSI with healthy, oversold, and extended interpretations."""
     max_points = TECHNICAL_FACTORS["rsi"]
     if rsi < TECHNICAL_THRESHOLDS["rsi_oversold"]:
-        return FactorScore("RSI (14)", 5.0, max_points, f"RSI is {format_number(rsi)}; oversold can be attractive if trend support holds.", "Oversold")
+        return FactorScore("rsi_14", "RSI (14)", 5.0, max_points, f"RSI is {format_number(rsi)}; oversold can be attractive if trend support holds.", "Oversold")
     if TECHNICAL_THRESHOLDS["rsi_neutral_low"] <= rsi <= TECHNICAL_THRESHOLDS["rsi_neutral_high"]:
-        return FactorScore("RSI (14)", max_points, max_points, f"RSI is {format_number(rsi)}; healthy momentum without obvious overheating.", "Healthy")
+        return FactorScore("rsi_14", "RSI (14)", max_points, max_points, f"RSI is {format_number(rsi)}; healthy momentum without obvious overheating.", "Healthy")
     if rsi < TECHNICAL_THRESHOLDS["rsi_extended"]:
-        return FactorScore("RSI (14)", 5.0, max_points, f"RSI is {format_number(rsi)}; constructive but not especially fresh.", "Constructive")
-    return FactorScore("RSI (14)", 2.0, max_points, f"RSI is {format_number(rsi)}; the stock looks extended and more vulnerable to a pullback.", "Extended")
+        return FactorScore("rsi_14", "RSI (14)", 5.0, max_points, f"RSI is {format_number(rsi)}; constructive but not especially fresh.", "Constructive")
+    return FactorScore("rsi_14", "RSI (14)", 2.0, max_points, f"RSI is {format_number(rsi)}; the stock looks extended and more vulnerable to a pullback.", "Extended")
 
 
 def score_macd_factor(macd: float, signal: float, hist: float) -> FactorScore:
     """Score MACD trend and histogram confirmation."""
     max_points = TECHNICAL_FACTORS["macd"]
     if macd > signal and hist > 0:
-        return FactorScore("MACD", max_points, max_points, "MACD is above signal with a positive histogram, supporting bullish trend continuation.", "Bullish")
+        return FactorScore("macd", "MACD", max_points, max_points, "MACD is above signal with a positive histogram, supporting bullish trend continuation.", "Bullish")
     if macd > signal:
-        return FactorScore("MACD", 3.0, max_points, "MACD is above signal, but the histogram confirmation is softer.", "Improving")
+        return FactorScore("macd", "MACD", 3.0, max_points, "MACD is above signal, but the histogram confirmation is softer.", "Improving")
     if hist > 0:
-        return FactorScore("MACD", 2.0, max_points, "MACD is still below signal even though histogram pressure is improving.", "Mixed")
-    return FactorScore("MACD", 0.0, max_points, "MACD is below signal with weak histogram support.", "Weak")
+        return FactorScore("macd", "MACD", 2.0, max_points, "MACD is still below signal even though histogram pressure is improving.", "Mixed")
+    return FactorScore("macd", "MACD", 0.0, max_points, "MACD is below signal with weak histogram support.", "Weak")
 
 
 def score_volume_factor(volume: float, avg_volume: float, trend_positive: bool) -> FactorScore:
@@ -306,83 +313,85 @@ def score_volume_factor(volume: float, avg_volume: float, trend_positive: bool) 
     max_points = TECHNICAL_FACTORS["volume"]
     ratio = volume / avg_volume if avg_volume else 0
     if ratio >= TECHNICAL_THRESHOLDS["volume_ratio_bullish"] and trend_positive:
-        return FactorScore("Volume vs 20D avg", max_points, max_points, f"Volume is running at {format_number(ratio)}x the 20-day average, confirming the move.", "Confirming")
+        return FactorScore("volume_ratio", "Volume vs 20D avg", max_points, max_points, f"Volume is running at {format_number(ratio)}x the 20-day average, confirming the move.", "Confirming")
     if ratio >= TECHNICAL_THRESHOLDS["volume_ratio_weak"]:
-        return FactorScore("Volume vs 20D avg", 2.0, max_points, f"Volume is {format_number(ratio)}x average; participation is acceptable but not decisive.", "Neutral")
-    return FactorScore("Volume vs 20D avg", 1.0, max_points, f"Volume is only {format_number(ratio)}x average, so conviction behind the move is lighter.", "Light")
+        return FactorScore("volume_ratio", "Volume vs 20D avg", 2.0, max_points, f"Volume is {format_number(ratio)}x average; participation is acceptable but not decisive.", "Neutral")
+    return FactorScore("volume_ratio", "Volume vs 20D avg", 1.0, max_points, f"Volume is only {format_number(ratio)}x average, so conviction behind the move is lighter.", "Light")
 
 
 def score_distance_factor(dist_50: float, dist_200: float, price_above_50: bool, trend_aligned: bool) -> FactorScore:
     """Score how extended price is from key moving averages."""
     max_points = TECHNICAL_FACTORS["distance_context"]
     if dist_50 >= TECHNICAL_THRESHOLDS["extended_above_50dma_pct"] or dist_200 >= TECHNICAL_THRESHOLDS["extended_above_200dma_pct"]:
-        return FactorScore("Distance from trend", 1.0, max_points, f"Price is {format_percent(dist_50)} from the 50DMA and {format_percent(dist_200)} from the 200DMA; extension risk is elevated.", "Extended")
+        return FactorScore("dist_from_50dma", "Distance from trend", 1.0, max_points, f"Price is {format_percent(dist_50)} from the 50DMA and {format_percent(dist_200)} from the 200DMA; extension risk is elevated.", "Extended")
     if trend_aligned and dist_50 <= 0 and price_above_50:
-        return FactorScore("Distance from trend", 2.0, max_points, f"Price is hugging the 50DMA at {format_percent(dist_50)}, which can be a healthier entry zone within the uptrend.", "Pullback")
+        return FactorScore("dist_from_50dma", "Distance from trend", 2.0, max_points, f"Price is hugging the 50DMA at {format_percent(dist_50)}, which can be a healthier entry zone within the uptrend.", "Pullback")
     if trend_aligned and price_above_50:
-        return FactorScore("Distance from trend", max_points, max_points, f"Price sits {format_percent(dist_50)} above the 50DMA and {format_percent(dist_200)} above the 200DMA; not overly stretched.", "Balanced")
-    return FactorScore("Distance from trend", 1.0, max_points, f"Distance from the major averages does not yet support a strong timing edge.", "Mixed")
+        return FactorScore("dist_from_50dma", "Distance from trend", max_points, max_points, f"Price sits {format_percent(dist_50)} above the 50DMA and {format_percent(dist_200)} above the 200DMA; not overly stretched.", "Balanced")
+    return FactorScore("dist_from_50dma", "Distance from trend", 1.0, max_points, f"Distance from the major averages does not yet support a strong timing edge.", "Mixed")
 
 
 def score_pe_factor(label: str, value: float | None, max_points: float, trailing: bool) -> FactorScore:
     """Score trailing or forward P/E."""
+    key = "trailing_pe" if trailing else "forward_pe"
     if value is None:
-        return missing_factor(label, max_points, "Unavailable from the current data feed; confidence is reduced.")
+        return missing_factor(key, label, max_points, "Unavailable from the current data feed; confidence is reduced.")
     low = FUNDAMENTAL_THRESHOLDS["pe_low"] if trailing else FUNDAMENTAL_THRESHOLDS["forward_pe_low"]
     fair = FUNDAMENTAL_THRESHOLDS["pe_fair"] if trailing else FUNDAMENTAL_THRESHOLDS["forward_pe_fair"]
     if value <= low:
-        return FactorScore(label, max_points, max_points, f"{label} is {format_number(value)}, which looks relatively efficient.", "Attractive")
+        return FactorScore(key, label, max_points, max_points, f"{label} is {format_number(value)}, which looks relatively efficient.", "Attractive")
     if value <= fair:
-        return FactorScore(label, max_points - 1, max_points, f"{label} is {format_number(value)}, which looks fair but not clearly cheap.", "Fair")
-    return FactorScore(label, 1.5, max_points, f"{label} is {format_number(value)}, so the market already expects continued execution.", "Expensive")
+        return FactorScore(key, label, max_points - 1, max_points, f"{label} is {format_number(value)}, which looks fair but not clearly cheap.", "Fair")
+    return FactorScore(key, label, 1.5, max_points, f"{label} is {format_number(value)}, so the market already expects continued execution.", "Expensive")
 
 
 def score_peg_factor(value: float | None) -> FactorScore:
     """Score valuation relative to growth."""
     max_points = FUNDAMENTAL_FACTORS["peg_ratio"]
     if value is None:
-        return missing_factor("PEG ratio", max_points, "Unavailable, so valuation-versus-growth is less certain.")
+        return missing_factor("peg_ratio", "PEG ratio", max_points, "Unavailable, so valuation-versus-growth is less certain.")
     if value <= FUNDAMENTAL_THRESHOLDS["peg_good"]:
-        return FactorScore("PEG ratio", max_points, max_points, f"PEG ratio is {format_number(value)}, a good balance between valuation and growth.", "Attractive")
+        return FactorScore("peg_ratio", "PEG ratio", max_points, max_points, f"PEG ratio is {format_number(value)}, a good balance between valuation and growth.", "Attractive")
     if value <= FUNDAMENTAL_THRESHOLDS["peg_ok"]:
-        return FactorScore("PEG ratio", 2.5, max_points, f"PEG ratio is {format_number(value)}, acceptable but not especially compelling.", "Okay")
-    return FactorScore("PEG ratio", 1.0, max_points, f"PEG ratio is {format_number(value)}, suggesting growth may already be well priced in.", "Rich")
+        return FactorScore("peg_ratio", "PEG ratio", 2.5, max_points, f"PEG ratio is {format_number(value)}, acceptable but not especially compelling.", "Okay")
+    return FactorScore("peg_ratio", "PEG ratio", 1.0, max_points, f"PEG ratio is {format_number(value)}, suggesting growth may already be well priced in.", "Rich")
 
 
 def score_roe_factor(value: float | None) -> FactorScore:
     """Score return on equity."""
     max_points = FUNDAMENTAL_FACTORS["roe"]
     if value is None:
-        return missing_factor("ROE", max_points, "Unavailable, so capital efficiency confidence is reduced.")
+        return missing_factor("return_on_equity", "ROE", max_points, "Unavailable, so capital efficiency confidence is reduced.")
     if value >= FUNDAMENTAL_THRESHOLDS["roe_strong"]:
-        return FactorScore("ROE", max_points, max_points, f"ROE is {format_percent(value)}, a strong shareholder return profile.", "Strong")
+        return FactorScore("return_on_equity", "ROE", max_points, max_points, f"ROE is {format_percent(value)}, a strong shareholder return profile.", "Strong")
     if value >= FUNDAMENTAL_THRESHOLDS["roe_ok"]:
-        return FactorScore("ROE", 3.0, max_points, f"ROE is {format_percent(value)}, decent but not standout.", "Solid")
-    return FactorScore("ROE", 1.5, max_points, f"ROE is {format_percent(value)}, which limits quality confidence.", "Soft")
+        return FactorScore("return_on_equity", "ROE", 3.0, max_points, f"ROE is {format_percent(value)}, decent but not standout.", "Solid")
+    return FactorScore("return_on_equity", "ROE", 1.5, max_points, f"ROE is {format_percent(value)}, which limits quality confidence.", "Soft")
 
 
 def score_debt_factor(value: float | None) -> FactorScore:
     """Score balance-sheet leverage."""
     max_points = FUNDAMENTAL_FACTORS["debt_to_equity"]
     if value is None:
-        return missing_factor("Debt to equity", max_points, "Unavailable, so leverage risk is less visible.")
+        return missing_factor("debt_to_equity", "Debt to equity", max_points, "Unavailable, so leverage risk is less visible.")
     if value <= FUNDAMENTAL_THRESHOLDS["debt_to_equity_low"]:
-        return FactorScore("Debt to equity", max_points, max_points, f"Debt to equity is {format_number(value)}, a healthy balance-sheet level.", "Healthy")
+        return FactorScore("debt_to_equity", "Debt to equity", max_points, max_points, f"Debt to equity is {format_number(value)}, a healthy balance-sheet level.", "Healthy")
     if value <= FUNDAMENTAL_THRESHOLDS["debt_to_equity_ok"]:
-        return FactorScore("Debt to equity", 2.5, max_points, f"Debt to equity is {format_number(value)}, manageable but worth monitoring.", "Manageable")
-    return FactorScore("Debt to equity", 1.0, max_points, f"Debt to equity is {format_number(value)}, leaving less room if growth slows.", "Heavy")
+        return FactorScore("debt_to_equity", "Debt to equity", 2.5, max_points, f"Debt to equity is {format_number(value)}, manageable but worth monitoring.", "Manageable")
+    return FactorScore("debt_to_equity", "Debt to equity", 1.0, max_points, f"Debt to equity is {format_number(value)}, leaving less room if growth slows.", "Heavy")
 
 
 def score_growth_factor(label: str, value: float | None) -> FactorScore:
     """Score revenue or earnings growth."""
     max_points = FUNDAMENTAL_FACTORS["revenue_growth"] if label == "Revenue growth" else FUNDAMENTAL_FACTORS["earnings_growth"]
+    key = "revenue_growth" if label == "Revenue growth" else "earnings_growth"
     if value is None:
-        return missing_factor(label, max_points, f"{label} is unavailable, which reduces conviction in the growth picture.")
+        return missing_factor(key, label, max_points, f"{label} is unavailable, which reduces conviction in the growth picture.")
     if value >= FUNDAMENTAL_THRESHOLDS["growth_strong"]:
-        return FactorScore(label, max_points, max_points, f"{label} is {format_percent(value)}, a strong expansion rate.", "Strong")
+        return FactorScore(key, label, max_points, max_points, f"{label} is {format_percent(value)}, a strong expansion rate.", "Strong")
     if value >= FUNDAMENTAL_THRESHOLDS["growth_ok"]:
-        return FactorScore(label, 2.5, max_points, f"{label} is {format_percent(value)}, positive and supportive.", "Positive")
-    return FactorScore(label, 1.0, max_points, f"{label} is {format_percent(value)}, which makes the growth case less compelling.", "Muted")
+        return FactorScore(key, label, 2.5, max_points, f"{label} is {format_percent(value)}, positive and supportive.", "Positive")
+    return FactorScore(key, label, 1.0, max_points, f"{label} is {format_percent(value)}, which makes the growth case less compelling.", "Muted")
 
 
 def score_cash_flow_factor(free_cash_flow: float | None, operating_cash_flow: float | None) -> FactorScore:
@@ -390,10 +399,10 @@ def score_cash_flow_factor(free_cash_flow: float | None, operating_cash_flow: fl
     max_points = FUNDAMENTAL_FACTORS["cash_flow"]
     signal = free_cash_flow if free_cash_flow is not None else operating_cash_flow
     if signal is None:
-        return missing_factor("Cash flow", max_points, "Cash-flow fields are unavailable, so durability confidence is lower.")
+        return missing_factor("free_cash_flow", "Cash flow", max_points, "Cash-flow fields are unavailable, so durability confidence is lower.")
     if signal > 0:
-        return FactorScore("Cash flow", max_points, max_points, f"Cash flow is positive at roughly {format_currency(signal)}, supporting durability.", "Positive")
-    return FactorScore("Cash flow", 0.5, max_points, f"Cash flow is negative at roughly {format_currency(signal)}, which trims quality confidence.", "Negative")
+        return FactorScore("free_cash_flow", "Cash flow", max_points, max_points, f"Cash flow is positive at roughly {format_currency(signal)}, supporting durability.", "Positive")
+    return FactorScore("free_cash_flow", "Cash flow", 0.5, max_points, f"Cash flow is negative at roughly {format_currency(signal)}, which trims quality confidence.", "Negative")
 
 
 def score_margin_factor(gross: float | None, operating: float | None, profit: float | None) -> FactorScore:
@@ -401,27 +410,27 @@ def score_margin_factor(gross: float | None, operating: float | None, profit: fl
     max_points = FUNDAMENTAL_FACTORS["margins"]
     margin_values = [value for value in (gross, operating, profit) if value is not None]
     if not margin_values:
-        return missing_factor("Margins", max_points, "Margin fields are sparse, so profitability breadth is harder to judge.")
+        return missing_factor("gross_margin", "Margins", max_points, "Margin fields are sparse, so profitability breadth is harder to judge.")
     average_margin = sum(margin_values) / len(margin_values)
     if average_margin >= FUNDAMENTAL_THRESHOLDS["margin_strong"]:
-        return FactorScore("Margins", max_points, max_points, f"Average margin profile is about {format_percent(average_margin)}, which is strong.", "Strong")
+        return FactorScore("gross_margin", "Margins", max_points, max_points, f"Average margin profile is about {format_percent(average_margin)}, which is strong.", "Strong")
     if average_margin >= FUNDAMENTAL_THRESHOLDS["margin_ok"]:
-        return FactorScore("Margins", 2.5, max_points, f"Average margin profile is about {format_percent(average_margin)}, respectable but not elite.", "Solid")
+        return FactorScore("gross_margin", "Margins", 2.5, max_points, f"Average margin profile is about {format_percent(average_margin)}, respectable but not elite.", "Solid")
     if average_margin >= FUNDAMENTAL_THRESHOLDS["margin_floor"]:
-        return FactorScore("Margins", 1.5, max_points, f"Average margin profile is about {format_percent(average_margin)}, which is thin.", "Thin")
-    return FactorScore("Margins", 0.5, max_points, f"Average margin profile is about {format_percent(average_margin)}, which is currently weak.", "Weak")
+        return FactorScore("gross_margin", "Margins", 1.5, max_points, f"Average margin profile is about {format_percent(average_margin)}, which is thin.", "Thin")
+    return FactorScore("gross_margin", "Margins", 0.5, max_points, f"Average margin profile is about {format_percent(average_margin)}, which is currently weak.", "Weak")
 
 
 def score_completeness_factor(completeness_ratio: float) -> FactorScore:
     """Explicitly reflect data coverage inside the fundamental score."""
     max_points = FUNDAMENTAL_FACTORS["data_completeness"]
     if completeness_ratio >= 0.8:
-        return FactorScore("Data completeness", max_points, max_points, f"Fundamental coverage is {format_percent(completeness_ratio)}, so confidence stays stronger.", "High")
+        return FactorScore("data_completeness", "Data completeness", max_points, max_points, f"Fundamental coverage is {format_percent(completeness_ratio)}, so confidence stays stronger.", "High")
     if completeness_ratio >= 0.55:
-        return FactorScore("Data completeness", 1.0, max_points, f"Fundamental coverage is {format_percent(completeness_ratio)}; missing fields reduce confidence somewhat.", "Medium")
-    return FactorScore("Data completeness", 0.0, max_points, f"Fundamental coverage is only {format_percent(completeness_ratio)}; the model reduces conviction explicitly.", "Low")
+        return FactorScore("data_completeness", "Data completeness", 1.0, max_points, f"Fundamental coverage is {format_percent(completeness_ratio)}; missing fields reduce confidence somewhat.", "Medium")
+    return FactorScore("data_completeness", "Data completeness", 0.0, max_points, f"Fundamental coverage is only {format_percent(completeness_ratio)}; the model reduces conviction explicitly.", "Low")
 
 
-def missing_factor(label: str, max_points: float, detail: str) -> FactorScore:
+def missing_factor(key: str, label: str, max_points: float, detail: str) -> FactorScore:
     """Create a missing-data factor entry."""
-    return FactorScore(label, 0.0, max_points, detail, "Missing", available=False)
+    return FactorScore(key, label, 0.0, max_points, detail, "Missing", available=False)

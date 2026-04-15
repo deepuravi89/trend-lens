@@ -68,6 +68,21 @@ python3 -m pytest
 - `Low`:
   Sparse fundamentals or weak alignment reduce trust in the conclusion.
 
+## Metric Glossary System
+
+Trend Lens now includes a centralized metric knowledge layer so users can learn key indicators on demand without cluttering the dashboard.
+
+- Metric definitions live in `config/metric_definitions.py`
+- Tooltip and glossary helpers live in `utils/metric_help.py`
+- UI components read from that central registry instead of hardcoding explanations inline
+
+If you add a new metric in the future:
+
+1. Add a canonical key and definition in `config/metric_definitions.py`
+2. Reuse that same key in scoring or UI components
+3. Keep interpretation ranges aligned with the thresholds in `config/scoring_config.py`
+4. Prefer short, practical definitions over long academic explanations
+
 ## How To Use The Position Advisor Inputs
 
 - `Total portfolio value`:

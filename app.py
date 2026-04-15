@@ -185,6 +185,21 @@ def inject_styles() -> None:
             .factor-detail { color: var(--muted); font-size: 0.9rem; line-height: 1.45; }
             .factor-meta { display: flex; flex-direction: column; align-items: flex-end; min-width: 92px; }
             .factor-points { color: var(--text); font-size: 1.02rem; font-weight: 700; }
+            .metric-help-label { color: inherit; display: inline-flex; align-items: center; gap: 0.26rem; text-decoration: none; }
+            .metric-inline-note { color: var(--muted); font-weight: 500; font-size: 0.82rem; }
+            .metric-help-dot {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                width: 0.92rem;
+                height: 0.92rem;
+                border-radius: 999px;
+                background: rgba(96, 165, 250, 0.1);
+                color: rgba(199, 225, 255, 0.92);
+                font-size: 0.64rem;
+                font-weight: 700;
+                flex: 0 0 auto;
+            }
 
             .math-grid {
                 display: grid;
@@ -247,6 +262,28 @@ def inject_styles() -> None:
                 color: var(--muted);
                 font-size: 0.92rem;
                 margin-bottom: 0.95rem;
+            }
+
+            .metric-guide-item {
+                padding: 0.85rem 0.95rem;
+                border-radius: 16px;
+                border: 1px solid rgba(148, 163, 184, 0.12);
+                background: rgba(7, 14, 27, 0.35);
+                margin-bottom: 0.7rem;
+            }
+
+            .metric-guide-why {
+                color: var(--muted-strong);
+                font-size: 0.88rem;
+                line-height: 1.5;
+                margin-top: 0.45rem;
+            }
+
+            .metric-guide-ranges {
+                margin: 0.55rem 0 0 1rem;
+                color: var(--muted);
+                font-size: 0.88rem;
+                line-height: 1.42;
             }
 
             .stTextInput input,
