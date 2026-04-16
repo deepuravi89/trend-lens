@@ -1,124 +1,182 @@
-# Trend Lens
+# 📊 Trend Lens
 
-Trend Lens is a local-first Streamlit app for personal stock analysis. It combines technical signals, fundamental quality checks, and portfolio-aware position sizing into one dashboard so you can judge whether a stock looks attractive to add, hold, trim, or avoid.
+**Trend Lens** is a local-first Streamlit app for personal stock analysis.
 
-It is a decision-support tool, not a trading bot, and not financial advice.
+It combines **technical signals, fundamental quality checks, and portfolio-aware position sizing** into a single dashboard so you can decide whether a stock is worth **adding, holding, trimming, or avoiding**.
 
-## Overview
+> 🧠 A decision-support tool — not a trading bot and not financial advice.
 
-Trend Lens helps you evaluate a stock from three angles:
+---
 
-- `Technical analysis`: trend, momentum, volume, and extension
-- `Fundamental analysis`: valuation, growth, profitability, leverage, and cash flow
-- `Position analysis`: your current holdings, sizing rules, and room to add
+## 🚀 Why Trend Lens
 
-The app turns those inputs into:
+Most tools show you **data**.
+Trend Lens helps you answer:
 
-- a technical score
-- a fundamental score
-- a position advisor score
-- a total score out of 100
-- a setup classification
-- a practical recommendation
+> **“What should I do with this stock right now?”**
 
-## Key Features
+It brings together:
 
-- `Technical Score`
-  Factor-by-factor breakdown of price vs moving averages, RSI, MACD, volume, and distance from trend.
-- `Fundamental Score`
-  Factor-by-factor breakdown of valuation, growth, returns, leverage, margins, cash flow, and data completeness.
-- `Position Advisor`
-  Portfolio-aware recommendation based on your current position, portfolio size, target sizing, and available cash.
-- `Position Math`
-  Clear sizing panel showing allocation, room left, unrealized gain/loss, and estimated shares you can add now.
-- `Setup Classification`
-  Rule-based chart read such as `Strong Uptrend`, `Recovery Setup`, or `Weak Downtrend`.
-- `Recommendation System`
-  Action labels including `Add`, `Add Small`, `Add on Pullback`, `Hold`, `Trim`, and `Avoid New Buy`.
-- `Metric Glossary`
-  Inline help, tooltips, and a bottom-page metric guide for beginner-friendly definitions.
+* Signal interpretation (technical + fundamental)
+* Portfolio context (position sizing)
+* Clear action bias (Add / Hold / Trim)
 
-## Setup Classification
+---
 
-Trend Lens adds a simple rule-based setup label on top of the raw technical score to make the chart easier to interpret.
+## 🧠 What It Analyzes
 
-- `Strong Uptrend`
-  Price is above key moving averages and momentum is supportive. This is usually the healthiest type of setup.
-- `Constructive but Extended`
-  The stock still looks strong, but it may be stretched enough that a fresh entry is less attractive right now.
-- `Recovery Setup`
-  Near-term action is improving, but the longer-term trend is not fully repaired yet.
-- `Mixed Setup`
-  Some signals look constructive, but the chart does not have a clean edge.
-- `Weak Downtrend`
-  Trend and momentum both look weak, so timing risk is higher.
+Trend Lens evaluates a stock from three perspectives:
 
-These setup labels are rule-based interpretations, not predictions.
+### 📈 Technical Analysis
 
-## Recommendation Logic
+* Trend (50DMA, 200DMA)
+* Momentum (RSI, MACD)
+* Volume confirmation
+* Price extension
 
-Trend Lens uses the setup label, total score, and your position context to produce a practical action bias.
+### 📊 Fundamental Analysis
 
-- `Add`
-  The stock looks strong and you still have meaningful room to build the position.
-- `Add Small`
-  The setup is workable, but conviction, timing, or remaining room argues for a measured add.
-- `Add on Pullback`
-  The stock looks strong overall, but it is extended enough that patience may improve entry quality.
-- `Hold`
-  The stock is reasonable to keep, but there is no strong case to press harder right now.
-- `Trim`
-  The position is oversized, stretched, or weaker than its size currently justifies.
-- `Avoid New Buy`
-  The setup does not offer enough support for fresh capital right now.
+* Valuation (P/E, PEG)
+* Growth (revenue, earnings)
+* Profitability (ROE, margins)
+* Balance sheet (debt)
+* Cash flow quality
 
-## How To Use The App
+### 🎯 Position Analysis
 
-### Inputs
+* Your current holdings
+* Portfolio size
+* Target sizing rules
+* Available capital
 
-- `Shares owned`
-  How many shares you currently hold.
-- `Average cost basis`
-  Your average purchase price per share.
-- `Portfolio value used for sizing`
-  The portfolio value Trend Lens should use when calculating allocation.
-- `Max position size`
-  Your hard cap for the position as a percentage of the portfolio.
-- `Target position size`
-  Optional softer target below the hard cap.
-- `Cash available`
-  Capital you are willing to deploy now.
+---
 
-### How To Read The Outputs
+## ⚡ What You Get
 
-- `Score`
-  The total score combines technical, fundamental, and position-aware analysis into one number out of 100.
-- `Setup type`
-  A plain-English read of the current chart structure.
-- `Recommendation`
-  The practical action bias based on score, setup, and your sizing inputs.
-- `Position math`
-  The sizing panel shows current allocation, room before your cap, unrealized gain/loss, and how much you could add now.
+* ✅ Technical Score (out of 40)
+* ✅ Fundamental Score (out of 40)
+* ✅ Position Advisor Score (out of 20)
+* 🎯 **Total Score (out of 100)**
+* 🧭 **Setup Classification**
+* 📌 **Actionable Recommendation**
 
-## Example Workflow
+---
 
-1. Enter a ticker or company name.
-2. Review the top summary: current price, total score, verdict, confidence, and quick summary.
-3. Check the `Technical Score` card to see the setup label and factor breakdown.
-4. Review the `Fundamental Score` card to see whether the business quality and valuation support the chart.
-5. Enter your position inputs in the `Position Advisor` section.
-6. Use the recommendation and `Position Math` panel to judge whether to add, wait, hold, or trim.
+## 🧭 Setup Classification
 
-## Limitations
+Trend Lens simplifies charts into intuitive setup types:
 
-- Trend Lens is a rule-based model, not a predictive system.
-- It depends on Yahoo Finance data through `yfinance`, which can be incomplete or noisy.
-- Some stocks and ETFs have sparse or inconsistent fundamental coverage.
-- Recommendations are decision-support heuristics, not personalized investment advice.
+| Setup                         | Meaning                              |
+| ----------------------------- | ------------------------------------ |
+| **Strong Uptrend**            | Trend and momentum aligned           |
+| **Constructive but Extended** | Strong, but stretched                |
+| **Recovery Setup**            | Improving short-term, weak long-term |
+| **Mixed Setup**               | No clear edge                        |
+| **Weak Downtrend**            | Trend and momentum weak              |
 
-## Setup Instructions
+> These are rule-based interpretations, not predictions.
 
-Create and activate a virtual environment, then install dependencies:
+---
+
+## 🎯 Recommendation System
+
+| Recommendation      | Meaning                         |
+| ------------------- | ------------------------------- |
+| **Add**             | Strong setup + room to build    |
+| **Add Small**       | Decent setup, measured approach |
+| **Add on Pullback** | Strong but extended             |
+| **Hold**            | No strong action needed         |
+| **Trim**            | Oversized or weakening          |
+| **Avoid New Buy**   | Weak setup                      |
+
+---
+
+## 🧮 Position Math (Your Edge)
+
+Trend Lens stands out by incorporating **portfolio-aware decisions**:
+
+* Current allocation %
+* Remaining room before cap
+* Unrealized gain/loss
+* Estimated shares you can add now
+
+👉 This is what turns analysis into **actionable decisions**
+
+---
+
+## 📚 Built-in Learning Layer
+
+* ℹ️ Tooltips for every metric
+* Clear interpretation ranges
+* Beginner-friendly explanations
+* Bottom-page metric glossary
+
+---
+
+## 🛠 How To Use
+
+### 1. Enter a Stock
+
+Search by ticker or company name.
+
+### 2. Read the Summary
+
+* Price
+* Score
+* Verdict
+* Confidence
+
+### 3. Check Technical Setup
+
+* Setup classification
+* Factor breakdown
+
+### 4. Review Fundamentals
+
+* Business quality
+* Valuation context
+
+### 5. Add Your Position
+
+Enter:
+
+* Shares owned
+* Cost basis
+* Portfolio value
+* Max position size
+* Target position size (optional)
+* Cash available
+
+### 6. Decide
+
+Use:
+
+* Recommendation
+* Position Math panel
+
+---
+
+## 🔄 Example Workflow
+
+1. Enter a ticker
+2. Check score + setup
+3. Validate fundamentals
+4. Enter position inputs
+5. Use recommendation + math panel
+6. Decide: add, wait, hold, or trim
+
+---
+
+## ⚠️ Limitations
+
+* Rule-based model (not predictive)
+* Depends on Yahoo Finance (`yfinance`)
+* Some data may be incomplete
+* Not personalized financial advice
+
+---
+
+## ⚙️ Setup Instructions
 
 ```bash
 python3 -m venv .venv
@@ -138,6 +196,20 @@ Run tests:
 python3 -m pytest
 ```
 
-## Not Financial Advice
+---
 
-Trend Lens is for personal research and decision support only. It is not financial advice and not a recommendation to buy or sell any security.
+## 🛣 Roadmap
+
+Planned improvements:
+
+* 📌 Watchlist & multi-stock comparison
+* 📊 Historical score tracking
+* 📈 Relative strength vs index
+* ⚡ Performance optimization
+
+---
+
+## ⚠️ Not Financial Advice
+
+Trend Lens is for personal research and decision support only.
+It is not financial advice and not a recommendation to buy or sell any security.
