@@ -6,7 +6,7 @@ import streamlit as st
 
 from services.advisor import PositionAdvice
 from services.market_data import StockSnapshot
-from services.scoring import FactorScore, ScoreBundle
+from services.scoring import FactorScore, ScoreBundle, TechnicalSetup
 from utils.formatters import (
     format_currency,
     format_currency_full,
@@ -31,6 +31,11 @@ VERDICT_CLASSES = {
     "High": "green",
     "Medium": "amber",
     "Low": "red",
+    "Strong Uptrend": "green",
+    "Constructive but Extended": "amber",
+    "Recovery Setup": "blue",
+    "Mixed Setup": "amber",
+    "Weak Downtrend": "red",
 }
 
 
@@ -47,7 +52,15 @@ def render_score_section(snapshot: StockSnapshot, scores: ScoreBundle, advice: P
     with left:
         tech_col, fund_col = st.columns(2, gap="large")
         with tech_col:
-            render_section_card("Technical Score", scores.technical.score, scores.technical.max_score, scores.technical.summary, scores.technical.confidence, scores.technical.factors)
+            render_section_card(
+                "Technical Score",
+                scores.technical.score,
+                scores.technical.max_score,
+                scores.technical.summary,
+                scores.technical.confidence,
+                scores.technical.factors,
+                setup=scores.technical.setup,
+            )
         with fund_col:
             render_section_card(
                 "Fundamental Score",
@@ -102,15 +115,34 @@ def render_top_summary(snapshot: StockSnapshot, scores: ScoreBundle) -> None:
     st.markdown(summary_card, unsafe_allow_html=True)
 
 
-def render_section_card(title: str, score: float, max_score: float, summary: str, confidence: str, factors: list[FactorScore]) -> None:
+def render_section_card(
+    title: str,
+    score: float,
+    max_score: float,
+    summary: str,
+    confidence: str,
+    factors: list[FactorScore],
+    setup: TechnicalSetup | None = None,
+) -> None:
     """Render a factor-by-factor section card."""
     confidence_key = confidence.split(" • ")[0]
+    setup_html = ""
+    if setup is not None:
+        setup_html = (
+            '<div style="display:flex; gap:0.45rem; flex-wrap:wrap; align-items:center; margin-top:0.45rem;">'
+            '<div class="metric-label" style="margin-bottom:0;">Setup</div>'
+            f'<div class="pill {VERDICT_CLASSES.get(setup.label, "blue")}" style="margin-top:0;">{setup.label}</div>'
+            f'<div class="pill {VERDICT_CLASSES.get(setup.strength, "blue")}" style="margin-top:0;">{setup.strength} Conviction</div>'
+            "</div>"
+            f'<div class="section-kicker" style="margin-top:0.55rem;">Typical action bias: {setup.action_bias}</div>'
+        )
     st.markdown(
         (
             '<div class="detail-card">'
             f'<div class="metric-label">{title}</div>'
             f'<div class="metric-value">{score:.0f} / {max_score:.0f}</div>'
             f'<div class="pill {VERDICT_CLASSES.get(confidence_key, "blue")}">{confidence}</div>'
+            f"{setup_html}"
             f'<div class="section-subtitle" style="margin-top:0.85rem;">{summary}</div>'
             '<div class="factor-table">'
             f'{"".join(render_factor_row(factor) for factor in factors)}'
@@ -142,8 +174,10 @@ def render_position_advisor_card(advice: PositionAdvice) -> None:
             '<div class="metric-label">Position Advisor</div>'
             f'<div class="metric-value">{advice.score:.0f} / 20</div>'
             f'<div class="pill {VERDICT_CLASSES.get(advice.recommendation, "blue")}">{advice.recommendation}</div>'
+            f'<div class="pill {VERDICT_CLASSES.get(advice.technical_setup.label, "blue")}" style="margin-left:0.45rem;">{advice.technical_setup.label}</div>'
             f'<div class="section-kicker">{suggested}</div>'
             f'<div class="section-subtitle" style="margin-top:0.65rem;">{advice.explanation}</div>'
+            f'<div class="metric-caption" style="margin-top:0.45rem;">Setup read: {advice.technical_setup.summary}</div>'
             '<div class="metric-label" style="margin-top:0.9rem;">What This Means</div>'
             '<ul class="explanation-list">'
             f'{"".join(f"<li>{bullet}</li>" for bullet in advice.bullets[:3])}'
@@ -227,11 +261,23 @@ def render_position_math_panel(advice: PositionAdvice) -> None:
 
 def render_detail_explainer(scores: ScoreBundle) -> None:
     """Render the combined detailed explanation card."""
+    technical_setup = scores.technical.setup
+    setup_block = ""
+    if technical_setup is not None:
+        setup_block = (
+            '<div class="metric-label" style="margin-top:0.5rem;">Setup Read</div>'
+            f'<div class="pill {VERDICT_CLASSES.get(technical_setup.label, "blue")}" style="margin-top:0;">{technical_setup.label}</div>'
+            f'<div class="section-subtitle" style="margin-top:0.65rem;">{technical_setup.summary}</div>'
+            '<ul class="explanation-list">'
+            f'{"".join(f"<li>{bullet}</li>" for bullet in technical_setup.reasoning_bullets)}'
+            "</ul>"
+        )
     st.markdown(
         (
             '<div class="detail-card">'
             '<div class="section-title">Why The Model Landed Here</div>'
             '<div class="section-subtitle">Each factor shows its point contribution and a short interpretation so the score stays inspectable.</div>'
+            f"{setup_block}"
             '<div class="metric-label" style="margin-top:0.5rem;">Technical Drivers</div>'
             '<ul class="explanation-list">'
             f'{"".join(f"<li>{format_metric_inline_label(factor.key, factor.label)}: {factor.display_points} points. {factor.detail}</li>" for factor in scores.technical.factors)}'

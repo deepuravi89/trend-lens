@@ -1,32 +1,122 @@
 # Trend Lens
 
-Trend Lens is a local-first Streamlit dashboard for personal stock analysis. It combines technical signals, fundamental quality checks, and portfolio-aware position sizing into one premium research cockpit.
+Trend Lens is a local-first Streamlit app for personal stock analysis. It combines technical signals, fundamental quality checks, and portfolio-aware position sizing into one dashboard so you can judge whether a stock looks attractive to add, hold, trim, or avoid.
 
-## What The App Does
+It is a decision-support tool, not a trading bot, and not financial advice.
 
-- Looks up a ticker or company name with `yfinance`
-- Scores the technical setup out of 40
-- Scores the fundamental picture out of 40
-- Scores your position context out of 20
-- Produces a total score out of 100 with a verdict and confidence label
-- Shows factor-by-factor point contributions so the score is inspectable
-- Calculates practical position math using your actual portfolio value and max allocation rules
-- Plots price, moving averages, volume, RSI, and MACD with Plotly
+## Overview
 
-## Project Structure
+Trend Lens helps you evaluate a stock from three angles:
 
-```text
-trend-lens/
-├── app.py
-├── components/
-├── config/
-├── services/
-├── tests/
-├── utils/
-└── requirements.txt
-```
+- `Technical analysis`: trend, momentum, volume, and extension
+- `Fundamental analysis`: valuation, growth, profitability, leverage, and cash flow
+- `Position analysis`: your current holdings, sizing rules, and room to add
 
-## Setup
+The app turns those inputs into:
+
+- a technical score
+- a fundamental score
+- a position advisor score
+- a total score out of 100
+- a setup classification
+- a practical recommendation
+
+## Key Features
+
+- `Technical Score`
+  Factor-by-factor breakdown of price vs moving averages, RSI, MACD, volume, and distance from trend.
+- `Fundamental Score`
+  Factor-by-factor breakdown of valuation, growth, returns, leverage, margins, cash flow, and data completeness.
+- `Position Advisor`
+  Portfolio-aware recommendation based on your current position, portfolio size, target sizing, and available cash.
+- `Position Math`
+  Clear sizing panel showing allocation, room left, unrealized gain/loss, and estimated shares you can add now.
+- `Setup Classification`
+  Rule-based chart read such as `Strong Uptrend`, `Recovery Setup`, or `Weak Downtrend`.
+- `Recommendation System`
+  Action labels including `Add`, `Add Small`, `Add on Pullback`, `Hold`, `Trim`, and `Avoid New Buy`.
+- `Metric Glossary`
+  Inline help, tooltips, and a bottom-page metric guide for beginner-friendly definitions.
+
+## Setup Classification
+
+Trend Lens adds a simple rule-based setup label on top of the raw technical score to make the chart easier to interpret.
+
+- `Strong Uptrend`
+  Price is above key moving averages and momentum is supportive. This is usually the healthiest type of setup.
+- `Constructive but Extended`
+  The stock still looks strong, but it may be stretched enough that a fresh entry is less attractive right now.
+- `Recovery Setup`
+  Near-term action is improving, but the longer-term trend is not fully repaired yet.
+- `Mixed Setup`
+  Some signals look constructive, but the chart does not have a clean edge.
+- `Weak Downtrend`
+  Trend and momentum both look weak, so timing risk is higher.
+
+These setup labels are rule-based interpretations, not predictions.
+
+## Recommendation Logic
+
+Trend Lens uses the setup label, total score, and your position context to produce a practical action bias.
+
+- `Add`
+  The stock looks strong and you still have meaningful room to build the position.
+- `Add Small`
+  The setup is workable, but conviction, timing, or remaining room argues for a measured add.
+- `Add on Pullback`
+  The stock looks strong overall, but it is extended enough that patience may improve entry quality.
+- `Hold`
+  The stock is reasonable to keep, but there is no strong case to press harder right now.
+- `Trim`
+  The position is oversized, stretched, or weaker than its size currently justifies.
+- `Avoid New Buy`
+  The setup does not offer enough support for fresh capital right now.
+
+## How To Use The App
+
+### Inputs
+
+- `Shares owned`
+  How many shares you currently hold.
+- `Average cost basis`
+  Your average purchase price per share.
+- `Portfolio value used for sizing`
+  The portfolio value Trend Lens should use when calculating allocation.
+- `Max position size`
+  Your hard cap for the position as a percentage of the portfolio.
+- `Target position size`
+  Optional softer target below the hard cap.
+- `Cash available`
+  Capital you are willing to deploy now.
+
+### How To Read The Outputs
+
+- `Score`
+  The total score combines technical, fundamental, and position-aware analysis into one number out of 100.
+- `Setup type`
+  A plain-English read of the current chart structure.
+- `Recommendation`
+  The practical action bias based on score, setup, and your sizing inputs.
+- `Position math`
+  The sizing panel shows current allocation, room before your cap, unrealized gain/loss, and how much you could add now.
+
+## Example Workflow
+
+1. Enter a ticker or company name.
+2. Review the top summary: current price, total score, verdict, confidence, and quick summary.
+3. Check the `Technical Score` card to see the setup label and factor breakdown.
+4. Review the `Fundamental Score` card to see whether the business quality and valuation support the chart.
+5. Enter your position inputs in the `Position Advisor` section.
+6. Use the recommendation and `Position Math` panel to judge whether to add, wait, hold, or trim.
+
+## Limitations
+
+- Trend Lens is a rule-based model, not a predictive system.
+- It depends on Yahoo Finance data through `yfinance`, which can be incomplete or noisy.
+- Some stocks and ETFs have sparse or inconsistent fundamental coverage.
+- Recommendations are decision-support heuristics, not personalized investment advice.
+
+## Setup Instructions
 
 Create and activate a virtual environment, then install dependencies:
 
@@ -36,117 +126,18 @@ source .venv/bin/activate
 python3 -m pip install -r requirements.txt
 ```
 
-## Run
+Run the app:
 
 ```bash
 python3 -m streamlit run app.py
 ```
 
-## Run Tests
+Run tests:
 
 ```bash
 python3 -m pytest
 ```
 
-## What The Scores Mean
-
-- `Technical score (40)`:
-  Looks at price vs 50DMA and 200DMA, 50DMA vs 200DMA, RSI, MACD, volume, and distance from key moving averages.
-- `Fundamental score (40)`:
-  Looks at valuation, growth, returns on capital, leverage, cash flow, margins, and data completeness.
-- `Position score (20)`:
-  Looks at your current allocation, remaining room under your max cap, available cash, unrealized gain/loss, and whether the stock looks extended.
-- `Total score (100)`:
-  Combines all three sections into a single readout.
-
-## Confidence Labels
-
-- `High`:
-  Data coverage is strong and the signals line up cleanly.
-- `Medium`:
-  The setup is usable, but either the signals are mixed or some data is missing.
-- `Low`:
-  Sparse fundamentals or weak alignment reduce trust in the conclusion.
-
-## Metric Glossary System
-
-Trend Lens now includes a centralized metric knowledge layer so users can learn key indicators on demand without cluttering the dashboard.
-
-- Metric definitions live in `config/metric_definitions.py`
-- Tooltip and glossary helpers live in `utils/metric_help.py`
-- UI components read from that central registry instead of hardcoding explanations inline
-
-If you add a new metric in the future:
-
-1. Add a canonical key and definition in `config/metric_definitions.py`
-2. Reuse that same key in scoring or UI components
-3. Keep interpretation ranges aligned with the thresholds in `config/scoring_config.py`
-4. Prefer short, practical definitions over long academic explanations
-
-## How To Use The Position Advisor Inputs
-
-- `Total portfolio value`:
-  Your full portfolio size. This is used to calculate current allocation and max allowable size.
-- `Shares owned`:
-  How many shares of this stock you currently own.
-- `Average cost basis`:
-  Used to estimate unrealized gain/loss.
-- `Max portfolio allocation (%)`:
-  Your hard ceiling for this position.
-- `Target position size (%)`:
-  Optional softer target below the hard cap.
-- `Cash available to deploy`:
-  Capital you are actually willing to put to work now.
-
-The app uses these fields to estimate:
-- Current position value
-- Current allocation %
-- Unrealized gain/loss
-- Room left before your max allocation
-- Shares you can add with cash
-- Shares you can add before reaching your allocation cap
-- Suggested shares to add now when the recommendation supports adding
-
-## How Allocation Is Calculated
-
-Trend Lens uses true portfolio-based sizing math for the Position Advisor:
-
-- `Current position value = shares owned × current price`
-- `Current allocation % = current position value / total portfolio value`
-- `Max allowed position value = total portfolio value × max portfolio allocation %`
-- `Remaining room to add = max allowed position value - current position value`
-- `Cash-limited add amount = min(cash available to deploy, remaining room to add)`
-- `Estimated shares can add now = floor(cash-limited add amount / current price)`
-
-If you provide a target position size:
-
-- `Target position value = total portfolio value × target position size %`
-- `Gap to target = target position value - current position value`
-
-## Position Advisor Labels
-
-- `Add`:
-  Strong overall setup, supportive technicals, and real room under your cap.
-- `Add Small`:
-  Decent setup, but either remaining room, score quality, or conviction is more limited.
-- `Add on Pullback`:
-  Strong stock overall, but technically extended enough that waiting may improve entry quality.
-- `Hold`:
-  Reasonable setup with no urgent action, or a position already near target size.
-- `Trim`:
-  Position is oversized, technically stretched, or weaker than its current weight justifies.
-- `Avoid New Buy`:
-  Setup lacks enough technical or fundamental support for fresh capital.
-
-## Known Limitations
-
-- The app relies on Yahoo Finance field coverage through `yfinance`, which can be incomplete or noisy.
-- Some companies and ETFs have sparse or inconsistent fundamental fields.
-- The scoring model is transparent and intentionally simple; it is a decision-support framework, not a predictive model.
-- Suggested add sizes are practical heuristics, not optimization outputs.
-- If total portfolio value is missing or zero, allocation-aware advice is intentionally reduced.
-- If average cost basis is missing while shares are held, unrealized gain/loss math cannot be computed accurately.
-
 ## Not Financial Advice
 
-Trend Lens is a personal research and decision-support tool. It is not a trading bot, not investment advice, and not a recommendation to buy or sell any security.
+Trend Lens is for personal research and decision support only. It is not financial advice and not a recommendation to buy or sell any security.

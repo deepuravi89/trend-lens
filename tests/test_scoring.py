@@ -66,7 +66,85 @@ def test_technical_score_flags_extended_conditions() -> None:
     scores = build_score_bundle(snapshot)
 
     assert "extended" in scores.technical.summary.lower()
+    assert scores.technical.setup is not None
+    assert scores.technical.setup.label == "Constructive but Extended"
     assert any(factor.status == "Extended" for factor in scores.technical.factors)
+
+
+def test_setup_classifies_strong_uptrend() -> None:
+    snapshot = make_snapshot(
+        price=120,
+        sma50=112,
+        sma200=100,
+        rsi=56,
+        macd=2.2,
+        signal=1.6,
+        hist=0.6,
+        volume=1_250_000,
+        avg_volume=1_000_000,
+        fundamentals={"trailingPE": 20},
+    )
+    scores = build_score_bundle(snapshot)
+
+    assert scores.technical.setup is not None
+    assert scores.technical.setup.label == "Strong Uptrend"
+
+
+def test_setup_classifies_recovery_setup() -> None:
+    snapshot = make_snapshot(
+        price=98,
+        sma50=96,
+        sma200=110,
+        rsi=46,
+        macd=0.6,
+        signal=0.4,
+        hist=0.2,
+        volume=1_050_000,
+        avg_volume=1_000_000,
+        fundamentals={"trailingPE": 20},
+    )
+    scores = build_score_bundle(snapshot)
+
+    assert scores.technical.setup is not None
+    assert scores.technical.setup.label == "Recovery Setup"
+
+
+def test_setup_classifies_mixed_setup() -> None:
+    snapshot = make_snapshot(
+        price=99,
+        sma50=101,
+        sma200=95,
+        rsi=52,
+        macd=0.1,
+        signal=0.2,
+        hist=-0.1,
+        volume=900_000,
+        avg_volume=1_000_000,
+        fundamentals={"trailingPE": 20},
+    )
+    scores = build_score_bundle(snapshot)
+
+    assert scores.technical.setup is not None
+    assert scores.technical.setup.label == "Mixed Setup"
+
+
+def test_setup_classifies_weak_downtrend() -> None:
+    snapshot = make_snapshot(
+        price=82,
+        sma50=90,
+        sma200=104,
+        rsi=34,
+        macd=-1.0,
+        signal=-0.6,
+        hist=-0.4,
+        volume=850_000,
+        avg_volume=1_000_000,
+        fundamentals={"trailingPE": 20},
+    )
+    scores = build_score_bundle(snapshot)
+
+    assert scores.technical.setup is not None
+    assert scores.technical.setup.label == "Weak Downtrend"
 
 
 def test_sparse_fundamental_data_reduces_confidence() -> None:

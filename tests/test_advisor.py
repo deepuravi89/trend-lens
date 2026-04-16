@@ -92,7 +92,8 @@ def test_recommendation_for_strong_underweight_setup() -> None:
     scores = build_score_bundle(snapshot)
     advice = build_position_advice(snapshot, scores, make_inputs(shares_owned=5, target_position_size_pct=6))
 
-    assert advice.recommendation in {"Add", "Add Small"}
+    assert advice.technical_setup.label == "Strong Uptrend"
+    assert advice.recommendation == "Add"
     assert advice.metrics.estimated_shares_can_add > 0
 
 
@@ -101,14 +102,32 @@ def test_recommendation_for_extended_but_strong_setup() -> None:
     scores = build_score_bundle(snapshot)
     advice = build_position_advice(snapshot, scores, make_inputs(shares_owned=5, average_cost_basis=90))
 
+    assert advice.technical_setup.label == "Constructive but Extended"
     assert advice.recommendation == "Add on Pullback"
 
 
-def test_recommendation_for_oversized_weak_setup() -> None:
-    snapshot = make_snapshot(price=100.0, rsi=74.0, dist_from_50=0.1)
+def test_recommendation_for_recovery_setup() -> None:
+    snapshot = make_snapshot(price=98.0, rsi=47.0, dist_from_50=0.01)
+    snapshot.history.loc[:, "SMA_50"] = [94.0, 95.0, 97.0]
+    snapshot.history.loc[:, "SMA_200"] = [105.0, 104.0, 103.0]
     scores = build_score_bundle(snapshot)
-    advice = build_position_advice(snapshot, scores, make_inputs(shares_owned=150, average_cost_basis=70))
+    advice = build_position_advice(snapshot, scores, make_inputs(shares_owned=5, average_cost_basis=92))
 
+    assert advice.technical_setup.label == "Recovery Setup"
+    assert advice.recommendation in {"Add Small", "Hold"}
+
+
+def test_recommendation_for_oversized_weak_setup() -> None:
+    snapshot = make_snapshot(price=82.0, rsi=34.0, dist_from_50=-0.09)
+    snapshot.history.loc[:, "SMA_50"] = [92.0, 91.0, 90.0]
+    snapshot.history.loc[:, "SMA_200"] = [108.0, 106.0, 104.0]
+    snapshot.history.loc[:, "MACD"] = [-0.6, -0.8, -1.0]
+    snapshot.history.loc[:, "MACD_SIGNAL"] = [-0.4, -0.5, -0.7]
+    snapshot.history.loc[:, "MACD_HIST"] = [-0.2, -0.3, -0.3]
+    scores = build_score_bundle(snapshot)
+    advice = build_position_advice(snapshot, scores, make_inputs(shares_owned=150, average_cost_basis=95))
+
+    assert advice.technical_setup.label == "Weak Downtrend"
     assert advice.recommendation == "Trim"
 
 

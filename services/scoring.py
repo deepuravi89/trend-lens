@@ -44,6 +44,18 @@ class SectionScore:
     confidence: str
     completeness_ratio: float
     factors: list[FactorScore]
+    setup: TechnicalSetup | None = None
+
+
+@dataclass
+class TechnicalSetup:
+    """Readable classification for the current technical structure."""
+
+    label: str
+    summary: str
+    reasoning_bullets: list[str]
+    strength: str
+    action_bias: str
 
 
 @dataclass
@@ -152,31 +164,26 @@ def score_technical(snapshot: StockSnapshot) -> SectionScore:
     score = min(sum(f.points for f in factors), SCORE_WEIGHTS["technical"])
     alignment_ratio = sum(1 for factor in factors if factor.points >= factor.max_points * 0.6) / len(factors)
     confidence = confidence_from_ratios(1.0, alignment_ratio)
-
-    strong_uptrend = price > sma50 > sma200 and rsi < TECHNICAL_THRESHOLDS["rsi_extended"] and macd > signal
-    constructive_extended = price > sma50 > sma200 and (
-        rsi >= TECHNICAL_THRESHOLDS["rsi_extended"] or dist_50 >= TECHNICAL_THRESHOLDS["extended_above_50dma_pct"]
+    setup = classify_technical_setup(
+        price=price,
+        sma50=sma50,
+        sma200=sma200,
+        rsi=rsi,
+        macd=macd,
+        signal=signal,
+        hist=hist,
+        dist_50=dist_50,
+        dist_200=dist_200,
     )
-    pullback_in_uptrend = price > sma200 and sma50 > sma200 and dist_50 <= 0 and rsi >= TECHNICAL_THRESHOLDS["rsi_neutral_low"]
-
-    if strong_uptrend:
-        summary = "Strong uptrend with trend, momentum, and participation aligned."
-    elif constructive_extended:
-        summary = "Constructive uptrend, but the stock looks extended enough to be selective on fresh entries."
-    elif pullback_in_uptrend:
-        summary = "Pullback within a broader uptrend; timing may improve if support continues to hold."
-    elif score >= 22:
-        summary = "Mixed setup with some constructive signals, but not enough alignment for high conviction."
-    else:
-        summary = "Weak or unstable setup with elevated timing risk."
 
     return SectionScore(
         score=score,
         max_score=SCORE_WEIGHTS["technical"],
-        summary=summary,
+        summary=setup.summary,
         confidence=confidence,
         completeness_ratio=1.0,
         factors=factors,
+        setup=setup,
     )
 
 
@@ -263,6 +270,108 @@ def build_quick_summary(technical: SectionScore, fundamental: SectionScore) -> s
     return (
         f"Technicals read as {technical.summary.lower()} "
         f"Fundamentals are {fundamental.summary.lower()}"
+    )
+
+
+def classify_technical_setup(
+    *,
+    price: float,
+    sma50: float,
+    sma200: float,
+    rsi: float,
+    macd: float,
+    signal: float,
+    hist: float,
+    dist_50: float,
+    dist_200: float,
+) -> TechnicalSetup:
+    """Classify the chart into a small, inspectable set of setup types."""
+    price_above_50 = price > sma50
+    price_above_200 = price > sma200
+    trend_aligned = sma50 > sma200
+    macd_improving = macd > signal or hist > 0
+    macd_weak = macd <= signal and hist <= 0
+    rsi_healthy = TECHNICAL_THRESHOLDS["rsi_neutral_low"] <= rsi <= TECHNICAL_THRESHOLDS["rsi_neutral_high"]
+    rsi_extended = rsi >= TECHNICAL_THRESHOLDS["rsi_extended"]
+    price_extended = dist_50 >= TECHNICAL_THRESHOLDS["extended_above_50dma_pct"]
+    pullback_zone = dist_50 <= TECHNICAL_THRESHOLDS["pullback_above_50dma_pct"]
+    recovery_rsi = rsi >= TECHNICAL_THRESHOLDS["rsi_recovery_floor"]
+    weak_rsi = rsi < TECHNICAL_THRESHOLDS["rsi_weak_floor"]
+
+    if price_above_200 and price_above_50 and trend_aligned and not (rsi_extended or price_extended) and macd_improving and rsi >= TECHNICAL_THRESHOLDS["rsi_neutral_low"]:
+        return TechnicalSetup(
+            label="Strong Uptrend",
+            summary="Trend and momentum are lined up, with price holding above the 50DMA and 200DMA.",
+            reasoning_bullets=[
+                "Price is above the 50DMA and 200DMA, so both the short-term and long-term trend are supportive.",
+                "The 50DMA is above the 200DMA, which keeps the broader trend structure constructive.",
+                "Momentum is healthy rather than overheated, and MACD is still supporting the move.",
+            ],
+            strength="High",
+            action_bias="Add",
+        )
+
+    if price_above_200 and price_above_50 and trend_aligned and (rsi_extended or price_extended):
+        extension_note = (
+            f"RSI is elevated at {format_number(rsi)}."
+            if rsi_extended
+            else f"Price is stretched at {format_percent(dist_50)} above the 50DMA."
+        )
+        return TechnicalSetup(
+            label="Constructive but Extended",
+            summary="The trend is still strong, but the stock looks extended for a fresh entry.",
+            reasoning_bullets=[
+                "Trend alignment still looks healthy with price above both moving averages and the 50DMA above the 200DMA.",
+                extension_note,
+                "This often favors patience for a pullback rather than chasing strength immediately.",
+            ],
+            strength="Medium",
+            action_bias="Add on Pullback",
+        )
+
+    if (not price_above_200) and (price_above_50 or dist_50 >= TECHNICAL_THRESHOLDS["pullback_above_50dma_pct"]) and macd_improving and recovery_rsi:
+        return TechnicalSetup(
+            label="Recovery Setup",
+            summary="Near-term action is improving, but the longer-term trend is not fully repaired yet.",
+            reasoning_bullets=[
+                "Price is working around or above the 50DMA, which can be an early sign of stabilization.",
+                "Momentum is improving, with MACD no longer clearly broken.",
+                "Price is still below the 200DMA, so the longer-term trend remains unconfirmed.",
+            ],
+            strength="Medium",
+            action_bias="Add Small",
+        )
+
+    if (not price_above_200) and (not price_above_50) and (not trend_aligned) and (weak_rsi or macd_weak):
+        return TechnicalSetup(
+            label="Weak Downtrend",
+            summary="Trend and momentum are both weak, so the setup still looks fragile.",
+            reasoning_bullets=[
+                "Price is below both the 50DMA and 200DMA, which weakens both short-term and long-term trend confidence.",
+                "The 50DMA is below the 200DMA, so trend structure is still pointed the wrong way.",
+                "Momentum is soft, which lowers the case for fresh buying until conditions improve.",
+            ],
+            strength="Low",
+            action_bias="Avoid New Buy",
+        )
+
+    mixed_bullets = [
+        "Signals are not fully aligned, so the chart does not offer a clean edge right now.",
+        "Some pieces look workable, but the moving averages and momentum are not telling the same story yet.",
+    ]
+    if pullback_zone and trend_aligned and price_above_200:
+        mixed_bullets.append("The stock is pulling back within a stronger structure, but confirmation is still incomplete.")
+    elif rsi_healthy:
+        mixed_bullets.append("Momentum is not badly overheated or broken, which keeps the setup watchable.")
+    else:
+        mixed_bullets.append("Momentum is neither clearly supportive nor clearly washed out, which argues for patience.")
+
+    return TechnicalSetup(
+        label="Mixed Setup",
+        summary="Some signals are constructive, but the chart does not have clean alignment yet.",
+        reasoning_bullets=mixed_bullets,
+        strength="Medium",
+        action_bias="Hold",
     )
 
 

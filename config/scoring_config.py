@@ -23,6 +23,8 @@ TECHNICAL_THRESHOLDS = {
     "rsi_neutral_low": 40,
     "rsi_neutral_high": 60,
     "rsi_extended": 70,
+    "rsi_recovery_floor": 42,
+    "rsi_weak_floor": 40,
     "volume_ratio_bullish": 1.1,
     "volume_ratio_weak": 0.9,
     "extended_above_50dma_pct": 0.08,
