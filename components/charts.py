@@ -16,6 +16,10 @@ def render_chart_suite(snapshot: StockSnapshot) -> None:
     chart = build_chart(snapshot)
     st.markdown('<div class="detail-card chart-shell">', unsafe_allow_html=True)
     st.markdown('<div class="section-title">Trend & Momentum</div>', unsafe_allow_html=True)
+    st.markdown(
+        '<div class="section-subtitle" style="margin-bottom:0.9rem;">Price action, moving averages, participation, and momentum stacked in one clean read.</div>',
+        unsafe_allow_html=True,
+    )
     st.plotly_chart(chart, use_container_width=True, config={"displayModeBar": False})
     st.markdown("</div>", unsafe_allow_html=True)
 

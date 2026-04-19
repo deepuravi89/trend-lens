@@ -7,7 +7,6 @@ import streamlit as st
 from components.charts import render_chart_suite
 from components.inputs import render_position_inputs, render_ticker_input
 from components.score_cards import render_header, render_score_section
-from config.scoring_config import APP_COPY
 from services.advisor import build_position_advice
 from services.market_data import get_stock_snapshot
 from services.scoring import build_score_bundle, finalize_total_score
@@ -28,11 +27,13 @@ def inject_styles() -> None:
         <style>
             :root {
                 --bg: #09111f;
-                --panel: rgba(13, 24, 44, 0.82);
-                --panel-strong: rgba(18, 32, 59, 0.95);
-                --border: rgba(148, 163, 184, 0.18);
+                --panel: rgba(12, 23, 43, 0.84);
+                --panel-strong: rgba(16, 30, 56, 0.96);
+                --panel-soft: rgba(8, 16, 30, 0.45);
+                --border: rgba(148, 163, 184, 0.17);
                 --text: #e6eefc;
-                --muted: #8fa5c5;
+                --muted: #8ca2c3;
+                --muted-strong: #b7c8e3;
                 --green: #3dd9a4;
                 --amber: #ffb648;
                 --red: #ff6b7a;
@@ -47,18 +48,13 @@ def inject_styles() -> None:
                 color: var(--text);
             }
 
-            [data-testid="stHeader"] {
-                background: rgba(0, 0, 0, 0);
-            }
-
-            [data-testid="stToolbar"] {
-                right: 1rem;
-            }
+            [data-testid="stHeader"] { background: transparent; }
+            [data-testid="stToolbar"] { right: 1rem; }
 
             .block-container {
-                padding-top: 2rem;
-                padding-bottom: 2.5rem;
-                max-width: 1320px;
+                padding-top: 1.5rem;
+                padding-bottom: 2.8rem;
+                max-width: 1360px;
             }
 
             .hero-card,
@@ -72,68 +68,62 @@ def inject_styles() -> None:
             }
 
             .hero-card {
-                padding: 1.75rem 1.75rem 1.2rem 1.75rem;
-                margin-bottom: 1.2rem;
+                padding: 1.8rem 1.8rem 1.55rem 1.8rem;
+                margin-bottom: 1rem;
+                background:
+                    radial-gradient(circle at top right, rgba(96, 165, 250, 0.14), transparent 32%),
+                    linear-gradient(180deg, rgba(16, 30, 56, 0.92), rgba(11, 21, 40, 0.86));
             }
+            .detail-card { padding: 1.3rem 1.35rem; height: 100%; }
+            .metric-card { padding: 1.2rem; min-height: 156px; }
 
-            .hero-eyebrow {
-                letter-spacing: 0.18em;
-                text-transform: uppercase;
-                color: var(--muted);
-                font-size: 0.72rem;
-                margin-bottom: 0.65rem;
-            }
-
-            .hero-title {
-                font-size: 2.2rem;
-                font-weight: 700;
-                margin: 0;
-                color: var(--text);
-            }
-
-            .hero-subtitle {
-                margin-top: 0.55rem;
-                font-size: 1rem;
-                color: var(--muted);
-                max-width: 58rem;
-                line-height: 1.6;
-            }
-
-            .metric-card {
-                padding: 1.3rem 1.25rem;
-                min-height: 162px;
-            }
-
+            .hero-eyebrow,
             .metric-label {
                 color: var(--muted);
                 text-transform: uppercase;
-                letter-spacing: 0.14em;
+                letter-spacing: 0.16em;
                 font-size: 0.72rem;
                 margin-bottom: 0.7rem;
             }
 
+            .hero-title {
+                font-size: 2.45rem;
+                font-weight: 700;
+                margin: 0;
+                color: var(--text);
+                letter-spacing: -0.03em;
+            }
+
+            .hero-subtitle,
+            .section-subtitle,
+            .metric-caption {
+                color: var(--muted);
+                line-height: 1.6;
+            }
+
+            .hero-subtitle {
+                max-width: 56rem;
+                font-size: 1rem;
+            }
+
             .metric-value {
-                font-size: 2rem;
+                font-size: 2.15rem;
                 font-weight: 700;
                 color: var(--text);
                 line-height: 1.1;
-            }
-
-            .metric-caption {
-                color: var(--muted);
-                font-size: 0.94rem;
-                margin-top: 0.7rem;
-                line-height: 1.5;
+                letter-spacing: -0.03em;
             }
 
             .pill {
                 display: inline-flex;
                 align-items: center;
                 border-radius: 999px;
-                padding: 0.3rem 0.8rem;
-                font-size: 0.86rem;
+                padding: 0.35rem 0.82rem;
+                font-size: 0.8rem;
                 font-weight: 600;
-                margin-top: 0.85rem;
+                margin-top: 0.75rem;
+                white-space: nowrap;
+                letter-spacing: 0.01em;
             }
 
             .pill.green { background: rgba(61, 217, 164, 0.16); color: #aaf2d8; }
@@ -141,38 +131,164 @@ def inject_styles() -> None:
             .pill.red { background: rgba(255, 107, 122, 0.14); color: #ffc2cb; }
             .pill.blue { background: rgba(96, 165, 250, 0.14); color: #c7e1ff; }
 
-            .detail-card {
-                padding: 1.25rem 1.3rem;
-                height: 100%;
+            .section-kicker {
+                color: var(--muted-strong);
+                font-size: 0.92rem;
+                line-height: 1.6;
+                margin-top: 0.35rem;
             }
 
             .section-title {
                 color: var(--text);
                 font-weight: 700;
-                font-size: 1.02rem;
-                margin-bottom: 0.85rem;
+                font-size: 1.05rem;
+                margin-bottom: 0.75rem;
+                letter-spacing: -0.01em;
             }
 
-            .section-subtitle {
+            .factor-table {
+                display: grid;
+                gap: 0.68rem;
+                margin-top: 1.05rem;
+            }
+
+            .factor-row {
+                display: flex;
+                justify-content: space-between;
+                gap: 1rem;
+                padding: 0.92rem 0.98rem;
+                border-radius: 18px;
+                border: 1px solid rgba(148, 163, 184, 0.12);
+                background: rgba(7, 14, 27, 0.4);
+            }
+
+            .factor-row.positive,
+            .math-row.positive {
+                border-color: rgba(61, 217, 164, 0.18);
+                background: linear-gradient(180deg, rgba(12, 31, 33, 0.65), rgba(7, 14, 27, 0.45));
+            }
+
+            .factor-row.caution,
+            .math-row.caution {
+                border-color: rgba(255, 182, 72, 0.2);
+                background: linear-gradient(180deg, rgba(36, 26, 12, 0.45), rgba(7, 14, 27, 0.45));
+            }
+
+            .factor-row.negative,
+            .math-row.negative {
+                border-color: rgba(255, 107, 122, 0.2);
+                background: linear-gradient(180deg, rgba(36, 17, 24, 0.5), rgba(7, 14, 27, 0.45));
+            }
+
+            .factor-main { min-width: 0; }
+            .factor-name { color: var(--text); font-weight: 600; margin-bottom: 0.22rem; }
+            .factor-detail { color: var(--muted); font-size: 0.9rem; line-height: 1.45; }
+            .factor-meta { display: flex; flex-direction: column; align-items: flex-end; min-width: 92px; }
+            .factor-points { color: var(--text); font-size: 1.02rem; font-weight: 700; }
+            .metric-help-label { color: inherit; display: inline-flex; align-items: center; gap: 0.26rem; text-decoration: none; }
+            .metric-inline-note { color: var(--muted); font-weight: 500; font-size: 0.82rem; }
+            .metric-help-dot {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                width: 0.92rem;
+                height: 0.92rem;
+                border-radius: 999px;
+                background: rgba(96, 165, 250, 0.1);
+                color: rgba(199, 225, 255, 0.92);
+                font-size: 0.64rem;
+                font-weight: 700;
+                flex: 0 0 auto;
+            }
+
+            .math-grid {
+                display: grid;
+                gap: 0.64rem;
+                margin-top: 0.95rem;
+            }
+
+            .math-row {
+                display: flex;
+                justify-content: space-between;
+                gap: 1rem;
+                align-items: center;
+                padding: 0.82rem 0.98rem;
+                border-radius: 16px;
+                background: rgba(7, 14, 27, 0.42);
+                border: 1px solid rgba(148, 163, 184, 0.12);
+            }
+
+            .math-row span { color: var(--muted); }
+            .math-row strong { color: var(--text); text-align: right; }
+
+            .mini-stat {
+                min-width: 132px;
+                padding: 0.75rem 0.9rem;
+                border-radius: 18px;
+                background: rgba(7, 14, 27, 0.42);
+                border: 1px solid rgba(148, 163, 184, 0.12);
+            }
+
+            .mini-stat span {
+                display: block;
                 color: var(--muted);
-                line-height: 1.6;
-                margin-bottom: 1rem;
+                font-size: 0.74rem;
+                text-transform: uppercase;
+                letter-spacing: 0.12em;
+                margin-bottom: 0.38rem;
+            }
+
+            .mini-stat strong {
+                color: var(--text);
+                font-size: 1.15rem;
             }
 
             .explanation-list {
                 margin: 0;
-                padding-left: 1.1rem;
+                padding-left: 1.15rem;
                 color: var(--text);
             }
+            .explanation-list li { margin-bottom: 0.52rem; line-height: 1.5; color: #d8e3f7; }
 
-            .explanation-list li {
-                margin-bottom: 0.55rem;
-                line-height: 1.5;
-                color: #d8e3f7;
+            .input-shell {
+                background: rgba(10, 20, 37, 0.55);
+                border: 1px solid rgba(148, 163, 184, 0.12);
+                border-radius: 22px;
+                padding: 1.2rem 1.2rem 0.5rem 1.2rem;
+                margin-bottom: 1.1rem;
             }
 
-            .stTextInput > div > div,
-            .stNumberInput > div > div > input {
+            .input-grid-note {
+                color: var(--muted);
+                font-size: 0.92rem;
+                margin-bottom: 0.95rem;
+            }
+
+            .metric-guide-item {
+                padding: 0.85rem 0.95rem;
+                border-radius: 16px;
+                border: 1px solid rgba(148, 163, 184, 0.12);
+                background: rgba(7, 14, 27, 0.35);
+                margin-bottom: 0.7rem;
+            }
+
+            .metric-guide-why {
+                color: var(--muted-strong);
+                font-size: 0.88rem;
+                line-height: 1.5;
+                margin-top: 0.45rem;
+            }
+
+            .metric-guide-ranges {
+                margin: 0.55rem 0 0 1rem;
+                color: var(--muted);
+                font-size: 0.88rem;
+                line-height: 1.42;
+            }
+
+            .stTextInput input,
+            .stNumberInput input,
+            .stSelectbox div[data-baseweb="select"] > div {
                 background: rgba(11, 19, 36, 0.95);
                 color: var(--text);
                 border-radius: 14px;
@@ -189,15 +305,29 @@ def inject_styles() -> None:
                 padding: 0.72rem 1rem;
             }
 
-            .chart-shell {
-                padding: 1rem 1rem 0.35rem 1rem;
+            .stExpander {
+                border: 1px solid rgba(148, 163, 184, 0.12);
+                border-radius: 16px;
+                background: rgba(7, 14, 27, 0.3);
             }
 
-            .footer-note {
-                color: var(--muted);
-                font-size: 0.88rem;
-                line-height: 1.5;
-                margin-top: 0.75rem;
+            .chart-shell { padding: 1rem 1rem 0.35rem 1rem; }
+
+            @media (max-width: 1080px) {
+                .hero-title { font-size: 2.05rem; }
+                .metric-value { font-size: 1.9rem; }
+                .factor-row,
+                .math-row { flex-direction: column; align-items: flex-start; }
+                .factor-meta { align-items: flex-start; min-width: 0; }
+                .mini-stat { min-width: calc(50% - 0.5rem); }
+            }
+
+            @media (max-width: 760px) {
+                .block-container { padding-top: 1rem; padding-left: 0.9rem; padding-right: 0.9rem; }
+                .hero-card, .detail-card, .metric-card { border-radius: 20px; }
+                .hero-card { padding: 1.35rem; }
+                .hero-title { font-size: 1.85rem; }
+                .mini-stat { min-width: 100%; }
             }
         </style>
         """,
@@ -230,33 +360,7 @@ def main() -> None:
 
     render_score_section(snapshot, scores, advice)
     render_chart_suite(snapshot)
-
-    lower_left, lower_right = st.columns([1.2, 1], gap="large")
-
-    with lower_left:
-        st.markdown('<div class="detail-card">', unsafe_allow_html=True)
-        st.markdown('<div class="section-title">Why The Model Landed Here</div>', unsafe_allow_html=True)
-        st.markdown(
-            f'<div class="section-subtitle">{APP_COPY["detailed_explainer"]}</div>',
-            unsafe_allow_html=True,
-        )
-        st.markdown(scores.render_full_explanation(), unsafe_allow_html=True)
-        st.markdown("</div>", unsafe_allow_html=True)
-
-    with lower_right:
-        st.markdown('<div class="detail-card">', unsafe_allow_html=True)
-        st.markdown('<div class="section-title">Position Context</div>', unsafe_allow_html=True)
-        st.markdown(
-            f'<div class="section-subtitle">{advice.explanation}</div>',
-            unsafe_allow_html=True,
-        )
-        st.markdown(advice.render_bullets(), unsafe_allow_html=True)
-        st.markdown(
-            '<div class="footer-note">This dashboard is a personal decision-support tool. '
-            "It is not a trading bot and not financial advice.</div>",
-            unsafe_allow_html=True,
-        )
-        st.markdown("</div>", unsafe_allow_html=True)
+    st.caption("Trend Lens is a local decision-support tool for personal investing research. It is not financial advice.")
 
 
 if __name__ == "__main__":

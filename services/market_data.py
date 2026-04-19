@@ -167,6 +167,9 @@ def get_stock_snapshot(ticker: str) -> StockSnapshot:
             "earningsGrowth": _coerce_float(info.get("earningsGrowth")),
             "freeCashflow": _coerce_float(info.get("freeCashflow")),
             "operatingCashflow": _coerce_float(info.get("operatingCashflow")),
+            "grossMargins": _coerce_float(info.get("grossMargins")),
+            "operatingMargins": _coerce_float(info.get("operatingMargins")),
+            "profitMargins": _coerce_float(info.get("profitMargins")),
         }
 
         metadata = StockMetadata(

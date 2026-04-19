@@ -17,11 +17,25 @@ def format_currency(value: float | None) -> str:
     return f"${value:,.2f}"
 
 
+def format_currency_full(value: float | None) -> str:
+    """Format currency with full thousands separators."""
+    if value is None:
+        return "N/A"
+    return f"${value:,.2f}"
+
+
 def format_percent(value: float | None) -> str:
     """Format percentages from decimal values."""
     if value is None:
         return "N/A"
     return f"{value * 100:+.1f}%"
+
+
+def format_percent_plain(value: float | None) -> str:
+    """Format percentages without forcing a sign."""
+    if value is None:
+        return "N/A"
+    return f"{value * 100:.1f}%"
 
 
 def format_number(value: float | None) -> str:
@@ -33,8 +47,22 @@ def format_number(value: float | None) -> str:
     return f"{value:.2f}"
 
 
+def format_points(value: float) -> str:
+    """Format point contributions for factor display."""
+    return f"{value:+.1f}".replace(".0", "")
+
+
+def format_shares(value: float | None) -> str:
+    """Format share counts for position math."""
+    if value is None:
+        return "N/A"
+    if abs(value - int(value)) < 1e-9:
+        return f"{int(value):,}"
+    return f"{value:,.2f}"
+
+
 def truncate_text(value: str, max_length: int = 180) -> str:
     """Truncate long text for compact card layouts."""
     if len(value) <= max_length:
         return value
-    return value[: max_length - 1].rstrip() + "…"
+    return value[: max_length - 1].rstrip() + "..."
