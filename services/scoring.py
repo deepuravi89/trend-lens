@@ -54,6 +54,7 @@ class TechnicalSetup:
     label: str
     summary: str
     reasoning_bullets: list[str]
+    takeaway: str
     strength: str
     action_bias: str
 
@@ -301,12 +302,13 @@ def classify_technical_setup(
     if price_above_200 and price_above_50 and trend_aligned and not (rsi_extended or price_extended) and macd_improving and rsi >= TECHNICAL_THRESHOLDS["rsi_neutral_low"]:
         return TechnicalSetup(
             label="Strong Uptrend",
-            summary="Trend and momentum are lined up, with price holding above the 50DMA and 200DMA.",
+            summary="Trend and momentum are aligned, and the stock is not obviously stretched.",
             reasoning_bullets=[
-                "Price is above the 50DMA and 200DMA, so both the short-term and long-term trend are supportive.",
-                "The 50DMA is above the 200DMA, which keeps the broader trend structure constructive.",
-                "Momentum is healthy rather than overheated, and MACD is still supporting the move.",
+                "Price is holding above both the 50DMA and 200DMA.",
+                "The 50DMA remains above the 200DMA, which keeps the broader trend pointed up.",
+                "Momentum is supportive without looking overly heated.",
             ],
+            takeaway="Usually the cleanest setup for building, as long as sizing still makes sense.",
             strength="High",
             action_bias="Add",
         )
@@ -319,12 +321,13 @@ def classify_technical_setup(
         )
         return TechnicalSetup(
             label="Constructive but Extended",
-            summary="The trend is still strong, but the stock looks extended for a fresh entry.",
+            summary="The stock still looks strong, but it is extended enough to make chasing less attractive.",
             reasoning_bullets=[
-                "Trend alignment still looks healthy with price above both moving averages and the 50DMA above the 200DMA.",
+                "The broader trend is still healthy, with price above both moving averages.",
                 extension_note,
-                "This often favors patience for a pullback rather than chasing strength immediately.",
+                "Entry quality looks weaker here than stock quality.",
             ],
+            takeaway="Usually better for patience than for chasing a fresh add.",
             strength="Medium",
             action_bias="Add on Pullback",
         )
@@ -332,12 +335,13 @@ def classify_technical_setup(
     if (not price_above_200) and (price_above_50 or dist_50 >= TECHNICAL_THRESHOLDS["pullback_above_50dma_pct"]) and macd_improving and recovery_rsi:
         return TechnicalSetup(
             label="Recovery Setup",
-            summary="Near-term action is improving, but the longer-term trend is not fully repaired yet.",
+            summary="Near-term action is improving, but the longer-term trend is still not fully repaired.",
             reasoning_bullets=[
-                "Price is working around or above the 50DMA, which can be an early sign of stabilization.",
-                "Momentum is improving, with MACD no longer clearly broken.",
-                "Price is still below the 200DMA, so the longer-term trend remains unconfirmed.",
+                "Price is stabilizing around or above the 50DMA.",
+                "Momentum is improving instead of continuing to break down.",
+                "The stock is still below the 200DMA, so long-term confirmation is missing.",
             ],
+            takeaway="Usually better for smaller, measured adds than for aggressive sizing.",
             strength="Medium",
             action_bias="Add Small",
         )
@@ -347,10 +351,11 @@ def classify_technical_setup(
             label="Weak Downtrend",
             summary="Trend and momentum are both weak, so the setup still looks fragile.",
             reasoning_bullets=[
-                "Price is below both the 50DMA and 200DMA, which weakens both short-term and long-term trend confidence.",
-                "The 50DMA is below the 200DMA, so trend structure is still pointed the wrong way.",
-                "Momentum is soft, which lowers the case for fresh buying until conditions improve.",
+                "Price is below both the 50DMA and 200DMA.",
+                "The 50DMA is below the 200DMA, so trend structure is still working against the stock.",
+                "Momentum remains weak rather than clearly stabilizing.",
             ],
+            takeaway="Usually better for caution, defense, or trimming than for new buying.",
             strength="Low",
             action_bias="Avoid New Buy",
         )
@@ -368,8 +373,9 @@ def classify_technical_setup(
 
     return TechnicalSetup(
         label="Mixed Setup",
-        summary="Some signals are constructive, but the chart does not have clean alignment yet.",
+        summary="Signals are mixed enough that patience is more useful than conviction here.",
         reasoning_bullets=mixed_bullets,
+        takeaway="Usually better for waiting than for forcing a new decision.",
         strength="Medium",
         action_bias="Hold",
     )

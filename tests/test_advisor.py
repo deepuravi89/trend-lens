@@ -95,6 +95,8 @@ def test_recommendation_for_strong_underweight_setup() -> None:
     assert advice.technical_setup.label == "Strong Uptrend"
     assert advice.recommendation == "Add"
     assert advice.metrics.estimated_shares_can_add > 0
+    assert "Strong Uptrend" in advice.decision_basis
+    assert "room" in advice.explanation.lower()
 
 
 def test_recommendation_for_extended_but_strong_setup() -> None:
@@ -104,6 +106,8 @@ def test_recommendation_for_extended_but_strong_setup() -> None:
 
     assert advice.technical_setup.label == "Constructive but Extended"
     assert advice.recommendation == "Add on Pullback"
+    assert "entry quality" in advice.explanation.lower()
+    assert "Constructive but Extended" in advice.decision_basis
 
 
 def test_recommendation_for_recovery_setup() -> None:
@@ -115,6 +119,7 @@ def test_recommendation_for_recovery_setup() -> None:
 
     assert advice.technical_setup.label == "Recovery Setup"
     assert advice.recommendation in {"Add Small", "Hold"}
+    assert "Recovery Setup" in advice.decision_basis
 
 
 def test_recommendation_for_oversized_weak_setup() -> None:
@@ -129,6 +134,8 @@ def test_recommendation_for_oversized_weak_setup() -> None:
 
     assert advice.technical_setup.label == "Weak Downtrend"
     assert advice.recommendation == "Trim"
+    assert "oversized" in advice.explanation.lower() or "size" in advice.explanation.lower()
+    assert "Weak Downtrend" in advice.decision_basis
 
 
 def test_missing_portfolio_value_limits_allocation_math() -> None:

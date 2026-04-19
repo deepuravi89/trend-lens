@@ -62,6 +62,7 @@ class PositionAdvice:
     score: float
     recommendation: str
     explanation: str
+    decision_basis: str
     bullets: list[str]
     metrics: PositionDerivedMetrics
     score_drivers: list[AdvisorScoreDriver]
@@ -82,6 +83,7 @@ def build_position_advice(snapshot: StockSnapshot, scores: ScoreBundle, inputs: 
         label="Mixed Setup",
         summary="Technical signals are incomplete, so the chart is being treated as mixed.",
         reasoning_bullets=["The classifier could not resolve a cleaner setup type from the available signals."],
+        takeaway="Usually better for waiting than for forcing a new decision.",
         strength="Low",
         action_bias="Hold",
     )
@@ -103,57 +105,57 @@ def build_position_advice(snapshot: StockSnapshot, scores: ScoreBundle, inputs: 
         score_drivers.append(AdvisorScoreDriver("Missing portfolio value", 1.0, "Allocation math is unavailable until total portfolio value is provided."))
         score = 1.0
     else:
-        if strong_total:
-            score += 8
-            score_drivers.append(AdvisorScoreDriver("Strong total score", 8.0, "The overall setup is strong enough to support adding if sizing allows it."))
-        elif decent_total:
-            score += 6
-            score_drivers.append(AdvisorScoreDriver("Decent total score", 6.0, "The stock screens reasonably well, but conviction is not peak-level."))
-        elif base_total >= POSITION_THRESHOLDS["hold_floor"]:
-            score += 4
-            score_drivers.append(AdvisorScoreDriver("Middle-of-the-road score", 4.0, "The stock is good enough to keep, but not an obvious add."))
-        else:
-            score += 1
-            score_drivers.append(AdvisorScoreDriver("Weak score profile", 1.0, "The combined setup does not support aggressive buying."))
-
         if technical_setup.label == "Strong Uptrend":
             score += 4
-            score_drivers.append(AdvisorScoreDriver("Technical setup: Strong Uptrend", 4.0, technical_setup.summary))
+            score_drivers.append(AdvisorScoreDriver("Setup read", 4.0, "Strong Uptrend: the trend is aligned and the stock is not obviously overstretched."))
         elif technical_setup.label == "Constructive but Extended":
             score += 1
-            score_drivers.append(AdvisorScoreDriver("Technical setup: Constructive but Extended", 1.0, technical_setup.summary))
+            score_drivers.append(AdvisorScoreDriver("Setup read", 1.0, "Constructive but Extended: the stock still looks strong, but entry quality is less attractive here."))
         elif technical_setup.label == "Recovery Setup":
             score += 2
-            score_drivers.append(AdvisorScoreDriver("Technical setup: Recovery Setup", 2.0, technical_setup.summary))
+            score_drivers.append(AdvisorScoreDriver("Setup read", 2.0, "Recovery Setup: momentum is improving, but the longer-term trend is still not fully repaired."))
         elif technical_setup.label == "Mixed Setup":
             score += 2
-            score_drivers.append(AdvisorScoreDriver("Technical setup: Mixed Setup", 2.0, technical_setup.summary))
+            score_drivers.append(AdvisorScoreDriver("Setup read", 2.0, "Mixed Setup: signals are usable, but not aligned well enough for high conviction."))
         else:
             score += 0
-            score_drivers.append(AdvisorScoreDriver("Technical setup: Weak Downtrend", 0.0, technical_setup.summary))
+            score_drivers.append(AdvisorScoreDriver("Setup read", 0.0, "Weak Downtrend: the trend and momentum picture still argues for caution."))
+
+        if strong_total:
+            score += 8
+            score_drivers.append(AdvisorScoreDriver("Score quality", 8.0, "The overall score is strong enough to support adding if sizing allows it."))
+        elif decent_total:
+            score += 6
+            score_drivers.append(AdvisorScoreDriver("Score quality", 6.0, "The overall score is decent, but conviction is not at the top end."))
+        elif base_total >= POSITION_THRESHOLDS["hold_floor"]:
+            score += 4
+            score_drivers.append(AdvisorScoreDriver("Score quality", 4.0, "The overall score is good enough to hold, but not strong enough to press."))
+        else:
+            score += 1
+            score_drivers.append(AdvisorScoreDriver("Score quality", 1.0, "The overall score is weak, so fresh buying should stay cautious."))
 
         if metrics.remaining_room_to_add is not None and metrics.remaining_room_to_add > 0:
             if metrics.current_allocation_pct is not None and metrics.current_allocation_pct * 100 < inputs.max_portfolio_allocation_pct:
                 score += 5
-                score_drivers.append(AdvisorScoreDriver("Room under cap", 5.0, "There is still real capacity under your max allocation."))
+                score_drivers.append(AdvisorScoreDriver("Sizing room", 5.0, "You still have real room under your max allocation cap."))
         else:
             score -= 2
-            score_drivers.append(AdvisorScoreDriver("No room under cap", -2.0, "The position is already at or above the max allocation ceiling."))
+            score_drivers.append(AdvisorScoreDriver("Sizing room", -2.0, "The position is already at or above your max allocation cap."))
 
         if metrics.current_allocation_pct is not None and metrics.current_allocation_pct > (inputs.max_portfolio_allocation_pct / 100) + POSITION_THRESHOLDS["oversized_buffer_pct"]:
             score -= 2
-            score_drivers.append(AdvisorScoreDriver("Oversized position", -2.0, "The position is already above the max allocation you set."))
+            score_drivers.append(AdvisorScoreDriver("Current sizing", -2.0, "The position is already above the max allocation you set."))
 
         if metrics.unrealized_gain_loss_pct is not None and metrics.unrealized_gain_loss_pct >= POSITION_THRESHOLDS["trim_gain_pct"] and is_extended:
             score -= 2
-            score_drivers.append(AdvisorScoreDriver("Big gain while extended", -2.0, "A large gain plus extension tilts the setup toward protecting capital."))
+            score_drivers.append(AdvisorScoreDriver("Reward vs. risk", -2.0, "A large gain plus extension tilts the setup toward protecting capital."))
 
         if metrics.unrealized_gain_loss_pct is not None and metrics.unrealized_gain_loss_pct <= POSITION_THRESHOLDS["deep_drawdown_pct"] and weak_total:
             score -= 1
-            score_drivers.append(AdvisorScoreDriver("Underwater with weak setup", -1.0, "A deep drawdown and weak score reduce the case for averaging down."))
+            score_drivers.append(AdvisorScoreDriver("Reward vs. risk", -1.0, "A deep drawdown and weak setup reduce the case for averaging down."))
 
         if metrics.target_was_clamped:
-            score_drivers.append(AdvisorScoreDriver("Target clamped to max", 0.0, "Target position size exceeded the max cap, so the model capped it at the max allocation."))
+            score_drivers.append(AdvisorScoreDriver("Target size", 0.0, "Target position size exceeded the max cap, so the model capped it at the max allocation."))
 
     recommendation, explanation = recommend_action(
         base_total=base_total,
@@ -166,11 +168,20 @@ def build_position_advice(snapshot: StockSnapshot, scores: ScoreBundle, inputs: 
     )
 
     bullets = build_position_bullets(metrics, recommendation, is_extended, technical_setup)
+    decision_basis = build_decision_basis(
+        setup=technical_setup,
+        recommendation=recommendation,
+        base_total=base_total,
+        fundamental_score=fundamental_score,
+        is_extended=is_extended,
+        metrics=metrics,
+    )
 
     return PositionAdvice(
         score=max(0, min(score, SCORE_WEIGHTS["position"])),
         recommendation=recommendation,
         explanation=explanation,
+        decision_basis=decision_basis,
         bullets=bullets,
         metrics=metrics,
         score_drivers=score_drivers,
@@ -267,8 +278,8 @@ def recommend_action(
     """Resolve the recommendation label and explanation."""
     if not metrics.has_valid_portfolio_value:
         if weak_total:
-            return "Avoid New Buy", f"The chart reads as {setup.label.lower()}, and the sizing call stays limited until you provide portfolio value."
-        return "Hold", f"The chart reads as {setup.label.lower()}, but the sizing call stays limited until you provide portfolio value."
+            return "Avoid New Buy", f"{setup.label} with missing portfolio value is not strong enough to support a fresh buy."
+        return "Hold", f"{setup.label}, but the sizing call stays limited until you provide portfolio value."
 
     oversized = (
         metrics.current_allocation_pct is not None
@@ -290,18 +301,18 @@ def recommend_action(
 
     if setup.label == "Weak Downtrend":
         if oversized:
-            return "Trim", "The stock is in a weak downtrend and the position is already too large for your cap."
-        return "Avoid New Buy", "This looks like a weak downtrend, so the trend and momentum picture does not support fresh buying."
+            return "Trim", "Weak Downtrend plus oversized positioning makes trimming the cleaner risk decision here."
+        return "Avoid New Buy", "Weak Downtrend means the trend and momentum picture still does not justify fresh buying."
 
     if setup.label == "Constructive but Extended":
         if (
             (base_total >= POSITION_THRESHOLDS["min_add_score"] or (technical_score >= 30 and fundamental_score >= 30))
             and can_add_now
         ):
-            return "Add on Pullback", "The stock still looks strong, but this setup is stretched enough that waiting for a pullback makes more sense."
+            return "Add on Pullback", "Constructive but Extended means the stock still looks strong, but entry quality should improve on a pullback."
         if base_total >= POSITION_THRESHOLDS["hold_floor"]:
-            return "Hold", "The stock still looks constructive, but extension and current sizing do not support adding here."
-        return "Avoid New Buy", "There is still some strength here, but not enough overall support to justify chasing an extended move."
+            return "Hold", "The setup still has some strength, but extension and current sizing do not support adding here."
+        return "Avoid New Buy", "The stock has some underlying strength, but not enough overall support to justify chasing an extended move."
 
     if setup.label == "Strong Uptrend":
         if (
@@ -312,16 +323,16 @@ def recommend_action(
             and not near_target
             and not limited_room
         ):
-            return "Add", "This looks like a strong uptrend, and you still have enough room to keep building the position."
+            return "Add", "Strong Uptrend, solid score quality, and room under your cap all support building here."
         if base_total >= POSITION_THRESHOLDS["strong_add_score"] and can_add_now and not near_target:
-            return "Add", "This looks like a strong uptrend, and you still have room under your cap to keep building."
+            return "Add", "Strong Uptrend and room under your cap support building here."
         if base_total >= POSITION_THRESHOLDS["min_add_score"] and can_add_now:
             if limited_room or near_target:
-                return "Add Small", "The setup is supportive, but your remaining room or target gap argues for a measured add."
-            return "Add Small", "The setup is supportive enough to keep building, but not enough to press harder."
+                return "Add Small", "Strong Uptrend, but your remaining room or target gap argues for a measured add rather than a full one."
+            return "Add Small", "The trend is healthy, but the edge is not strong enough to justify pressing harder."
         if base_total >= POSITION_THRESHOLDS["hold_floor"]:
             return "Hold", "The trend is still supportive, but current sizing or score quality does not call for a new add."
-        return "Avoid New Buy", "The chart looks better than the full score mix, but not enough to justify a new buy here."
+        return "Avoid New Buy", "The chart looks better than the full score mix, but not enough to justify a fresh buy here."
 
     if setup.label == "Recovery Setup":
         if (
@@ -331,17 +342,17 @@ def recommend_action(
             and can_add_now
             and not near_target
         ):
-            return "Add Small", "This looks like a recovery setup: improving near-term action, but still enough long-term uncertainty to keep sizing measured."
+            return "Add Small", "Recovery Setup means near-term action is improving, but the unconfirmed long-term trend still argues for measured sizing."
         if base_total >= POSITION_THRESHOLDS["hold_floor"]:
             return "Hold", "The stock is stabilizing, but the longer-term trend is not repaired enough to justify a larger add yet."
         return "Avoid New Buy", "The stock is trying to recover, but the overall support is still too thin for fresh capital."
 
     if setup.label == "Mixed Setup":
         if oversized and weak_total:
-            return "Trim", "The setup is mixed, and the position is already larger than your sizing rules justify."
+            return "Trim", "Mixed Setup plus oversized positioning makes the current holding harder to justify."
         if base_total >= POSITION_THRESHOLDS["hold_floor"] or near_target:
-            return "Hold", "This looks like a mixed setup, so holding steady makes more sense than forcing a new decision."
-        return "Avoid New Buy", "The chart does not offer a clean enough edge to support fresh buying."
+            return "Hold", "Mixed Setup means the edge is limited, so holding steady makes more sense than forcing a new decision."
+        return "Avoid New Buy", "Mixed Setup means the chart does not offer a clean enough edge for fresh buying."
 
     if oversized or (is_extended and weak_total):
         return "Trim", "The position is either too large for your rules or too stretched for a weakening setup."
@@ -402,3 +413,52 @@ def build_position_bullets(
         bullets.append("The stock is not obviously extended, which makes a staged add easier to justify if the rest of the setup holds.")
 
     return bullets
+
+
+def build_decision_basis(
+    *,
+    setup: TechnicalSetup,
+    recommendation: str,
+    base_total: float,
+    fundamental_score: float,
+    is_extended: bool,
+    metrics: PositionDerivedMetrics,
+) -> str:
+    """Build a compact user-facing summary of the recommendation basis."""
+    parts = [setup.label]
+
+    if recommendation == "Add":
+        parts.append("good overall score")
+        if metrics.remaining_room_to_add:
+            parts.append("room under cap")
+        if fundamental_score >= 30:
+            parts.append("supportive fundamentals")
+    elif recommendation == "Add Small":
+        if setup.label == "Recovery Setup":
+            parts.append("improving momentum")
+            parts.append("long-term trend still unconfirmed")
+        else:
+            parts.append("supportive setup")
+            if metrics.target_position_value is not None:
+                parts.append("measured sizing")
+    elif recommendation == "Add on Pullback":
+        parts.append("strong stock quality")
+        parts.append("entry quality is weaker here")
+    elif recommendation == "Hold":
+        parts.append("limited edge")
+        if metrics.target_position_value is not None and metrics.current_position_value >= metrics.target_position_value * POSITION_THRESHOLDS["near_target_buffer_pct"]:
+            parts.append("already near target")
+        elif is_extended:
+            parts.append("not a clean entry")
+    elif recommendation == "Trim":
+        parts.append("current sizing is heavy")
+        if is_extended:
+            parts.append("extension raises risk")
+        else:
+            parts.append("setup does not justify the size")
+    else:
+        parts.append("no clean reason for fresh buying")
+        if is_extended:
+            parts.append("entry quality is weak")
+
+    return " + ".join(parts[:3])

@@ -130,11 +130,11 @@ def render_section_card(
     if setup is not None:
         setup_html = (
             '<div style="display:flex; gap:0.45rem; flex-wrap:wrap; align-items:center; margin-top:0.45rem;">'
-            '<div class="metric-label" style="margin-bottom:0;">Setup</div>'
+            '<div class="metric-label" style="margin-bottom:0;">Setup Read</div>'
             f'<div class="pill {VERDICT_CLASSES.get(setup.label, "blue")}" style="margin-top:0;">{setup.label}</div>'
-            f'<div class="pill {VERDICT_CLASSES.get(setup.strength, "blue")}" style="margin-top:0;">{setup.strength} Conviction</div>'
+            f'<div class="pill {VERDICT_CLASSES.get(setup.action_bias, "blue")}" style="margin-top:0;">Typical Move: {setup.action_bias}</div>'
             "</div>"
-            f'<div class="section-kicker" style="margin-top:0.55rem;">Typical action bias: {setup.action_bias}</div>'
+            f'<div class="metric-caption" style="margin-top:0.35rem;">{setup.takeaway}</div>'
         )
     st.markdown(
         (
@@ -166,23 +166,24 @@ def render_position_advisor_card(advice: PositionAdvice) -> None:
     )
     drivers_html = "".join(
         f"<li><strong>{driver.label}</strong>: {driver.detail}</li>"
-        for driver in advice.score_drivers[:4]
+        for driver in advice.score_drivers[:3]
     )
     st.markdown(
         (
             '<div class="detail-card">'
             '<div class="metric-label">Position Advisor</div>'
             f'<div class="metric-value">{advice.score:.0f} / 20</div>'
-            f'<div class="pill {VERDICT_CLASSES.get(advice.recommendation, "blue")}">{advice.recommendation}</div>'
             f'<div class="pill {VERDICT_CLASSES.get(advice.technical_setup.label, "blue")}" style="margin-left:0.45rem;">{advice.technical_setup.label}</div>'
+            f'<div class="pill {VERDICT_CLASSES.get(advice.recommendation, "blue")}" style="margin-left:0.45rem;">{advice.recommendation}</div>'
             f'<div class="section-kicker">{suggested}</div>'
+            f'<div class="metric-caption" style="margin-top:0.45rem;">Why this call: {advice.decision_basis}</div>'
             f'<div class="section-subtitle" style="margin-top:0.65rem;">{advice.explanation}</div>'
             f'<div class="metric-caption" style="margin-top:0.45rem;">Setup read: {advice.technical_setup.summary}</div>'
             '<div class="metric-label" style="margin-top:0.9rem;">What This Means</div>'
             '<ul class="explanation-list">'
             f'{"".join(f"<li>{bullet}</li>" for bullet in advice.bullets[:3])}'
             "</ul>"
-            '<div class="metric-label" style="margin-top:0.95rem;">Why The Advisor Scored It This Way</div>'
+            '<div class="metric-label" style="margin-top:0.95rem;">Top Decision Drivers</div>'
             f'<ul class="explanation-list">{drivers_html}</ul>'
             "</div>"
         ),
@@ -268,6 +269,7 @@ def render_detail_explainer(scores: ScoreBundle) -> None:
             '<div class="metric-label" style="margin-top:0.5rem;">Setup Read</div>'
             f'<div class="pill {VERDICT_CLASSES.get(technical_setup.label, "blue")}" style="margin-top:0;">{technical_setup.label}</div>'
             f'<div class="section-subtitle" style="margin-top:0.65rem;">{technical_setup.summary}</div>'
+            f'<div class="metric-caption" style="margin-top:0.35rem;">{technical_setup.takeaway}</div>'
             '<ul class="explanation-list">'
             f'{"".join(f"<li>{bullet}</li>" for bullet in technical_setup.reasoning_bullets)}'
             "</ul>"
