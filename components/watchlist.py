@@ -6,6 +6,7 @@ import pandas as pd
 import streamlit as st
 
 from services.advisor import PositionInputs
+from services.market_data import SearchMatch, search_tickers
 from services.watchlist import WatchlistEntry, WatchlistRow, build_watchlist_row, rank_watchlist_rows
 from utils.formatters import format_currency, format_currency_full, format_percent_plain
 
@@ -73,7 +74,20 @@ def render_watchlist_section(position_inputs: PositionInputs) -> None:
 def _render_watchlist_manager() -> None:
     left, right = st.columns([2.2, 1], gap="large")
     with left:
-        ticker = st.text_input("Add watchlist ticker", value="", max_chars=10, help="Add a ticker symbol such as MSFT or NVDA.").strip().upper()
+        query = st.text_input(
+            "Add watchlist ticker",
+            value="",
+            max_chars=40,
+            help="Type a ticker like TSLA or a company name like Tesla.",
+            key="watchlist_query",
+        ).strip()
+        matches = search_tickers(query)
+        if matches:
+            ticker = _render_watchlist_match_selector(matches)
+        else:
+            ticker = query.upper()
+            if query:
+                st.caption("No search matches found. Trend Lens will try your input as a ticker symbol directly.")
         note = st.text_input("Optional note / thesis", value="", max_chars=80, help="Keep a short reminder of why the stock is on your list.")
         row_a, row_b = st.columns(2, gap="medium")
         with row_a:
@@ -82,7 +96,9 @@ def _render_watchlist_manager() -> None:
             average_cost_basis = st.number_input("Average cost (optional)", min_value=0.0, value=0.0, step=1.0, key="watchlist_cost")
         if st.button("Add To Watchlist", use_container_width=True, key="watchlist_add") and ticker:
             entries = st.session_state["watchlist_entries"]
-            if not any(item["ticker"] == ticker for item in entries):
+            if any(item["ticker"] == ticker for item in entries):
+                st.info(f"{ticker} is already in your watchlist.")
+            else:
                 entries.append(
                     {
                         "ticker": ticker,
@@ -92,6 +108,7 @@ def _render_watchlist_manager() -> None:
                     }
                 )
                 st.session_state["watchlist_entries"] = entries
+                st.success(f"Added {ticker} to the watchlist.")
     with right:
         entries = st.session_state["watchlist_entries"]
         options = [item["ticker"] for item in entries]
@@ -109,6 +126,31 @@ def _render_watchlist_manager() -> None:
                 }
                 for entry in STARTER_WATCHLIST
             ]
+
+
+def _render_watchlist_match_selector(matches: list[SearchMatch]) -> str:
+    """Render the best-match selector for watchlist additions."""
+    best = matches[0]
+    st.markdown(
+        (
+            '<div class="section-subtitle" style="margin: 0.35rem 0 0.65rem 0;">'
+            f'Best match: <strong style="color:#e6eefc;">{best.symbol}</strong> — {best.name}'
+            "</div>"
+        ),
+        unsafe_allow_html=True,
+    )
+    if len(matches) == 1:
+        return best.symbol
+
+    selected_label = st.selectbox(
+        "Choose watchlist match",
+        options=[match.label for match in matches],
+        index=0,
+        key="watchlist_match_selector",
+        help="Pick a different symbol if the top match is not the one you meant.",
+    )
+    selected_match = next(match for match in matches if match.label == selected_label)
+    return selected_match.symbol
 
 
 def _build_rows(position_inputs: PositionInputs) -> list[WatchlistRow]:
