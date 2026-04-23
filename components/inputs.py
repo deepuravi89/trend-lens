@@ -74,7 +74,7 @@ def _render_match_selector(matches: list[SearchMatch]) -> str:
     return selected_match.symbol
 
 
-def render_position_inputs() -> PositionInputs:
+def render_position_inputs(key_prefix: str = "position") -> PositionInputs:
     """Render the portfolio-aware position input section."""
     st.markdown("")
     st.markdown('<div class="input-shell">', unsafe_allow_html=True)
@@ -97,6 +97,7 @@ def render_position_inputs() -> PositionInputs:
             min_value=0.0,
             value=100000.0,
             step=1000.0,
+            key=f"{key_prefix}_total_portfolio_value",
             help="Use the total value of the investable portfolio this position should be sized against. This is what makes the allocation math real.",
         )
     with top[1]:
@@ -105,6 +106,7 @@ def render_position_inputs() -> PositionInputs:
             min_value=0.0,
             value=0.0,
             step=1.0,
+            key=f"{key_prefix}_shares_owned",
             help="How many shares you currently own. Use 0 if you are evaluating a new position.",
         )
     with top[2]:
@@ -113,6 +115,7 @@ def render_position_inputs() -> PositionInputs:
             min_value=0.0,
             value=0.0,
             step=1.0,
+            key=f"{key_prefix}_average_cost_basis",
             help="Your average purchase price per share. This is used to estimate unrealized gain or loss.",
         )
 
@@ -124,6 +127,7 @@ def render_position_inputs() -> PositionInputs:
             max_value=100.0,
             value=10.0,
             step=0.5,
+            key=f"{key_prefix}_max_allocation_pct",
             help="Your hard ceiling for this position as a percentage of total portfolio value.",
         )
     with bottom[1]:
@@ -133,6 +137,7 @@ def render_position_inputs() -> PositionInputs:
             max_value=100.0,
             value=0.0,
             step=0.5,
+            key=f"{key_prefix}_target_position_size_pct",
             help="Optional softer target if you are still building the position. Set to 0 to ignore it.",
         )
     with bottom[2]:
@@ -141,6 +146,7 @@ def render_position_inputs() -> PositionInputs:
             min_value=0.0,
             value=0.0,
             step=100.0,
+            key=f"{key_prefix}_cash_available",
             help="Dry powder you would realistically be willing to use right now for this idea.",
         )
     st.markdown("</div>", unsafe_allow_html=True)

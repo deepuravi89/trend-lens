@@ -19,10 +19,13 @@ class StockMetadata:
     short_name: str | None
     summary: str | None
     exchange: str | None
-    current_price: float | None
-    market_cap: float | None
-    day_change_pct: float | None
-    fundamentals: dict[str, float | str | None]
+    quote_type: str | None = None
+    fund_family: str | None = None
+    category: str | None = None
+    current_price: float | None = None
+    market_cap: float | None = None
+    day_change_pct: float | None = None
+    fundamentals: dict[str, float | str | None] | None = None
 
 
 @dataclass
@@ -133,7 +136,7 @@ def get_stock_snapshot(ticker: str) -> StockSnapshot:
     symbol = ticker.strip().upper()
     if not symbol:
         return StockSnapshot(
-            metadata=StockMetadata(symbol="", short_name=None, summary=None, exchange=None, current_price=None, market_cap=None, day_change_pct=None, fundamentals={}),
+            metadata=StockMetadata(symbol="", short_name=None, summary=None, exchange=None, quote_type=None, fund_family=None, category=None, current_price=None, market_cap=None, day_change_pct=None, fundamentals={}),
             history=pd.DataFrame(),
             latest_price=None,
             error="Please enter a stock ticker.",
@@ -144,7 +147,7 @@ def get_stock_snapshot(ticker: str) -> StockSnapshot:
         history = stock.history(period="1y", auto_adjust=False)
         if history.empty:
             return StockSnapshot(
-                metadata=StockMetadata(symbol=symbol, short_name=None, summary=None, exchange=None, current_price=None, market_cap=None, day_change_pct=None, fundamentals={}),
+                metadata=StockMetadata(symbol=symbol, short_name=None, summary=None, exchange=None, quote_type=None, fund_family=None, category=None, current_price=None, market_cap=None, day_change_pct=None, fundamentals={}),
                 history=pd.DataFrame(),
                 latest_price=None,
                 error=f"No price history was returned for {symbol}. Check the ticker and try again.",
@@ -177,6 +180,9 @@ def get_stock_snapshot(ticker: str) -> StockSnapshot:
             short_name=_safe_text(info.get("shortName")) or _safe_text(info.get("longName")),
             summary=_safe_text(info.get("longBusinessSummary")),
             exchange=_safe_text(info.get("exchange")),
+            quote_type=_safe_text(info.get("quoteType")),
+            fund_family=_safe_text(info.get("fundFamily")),
+            category=_safe_text(info.get("category")),
             current_price=_coerce_float(info.get("currentPrice")) or latest_close,
             market_cap=_coerce_float(info.get("marketCap")),
             day_change_pct=day_change_pct,
@@ -185,7 +191,7 @@ def get_stock_snapshot(ticker: str) -> StockSnapshot:
         return StockSnapshot(metadata=metadata, history=history, latest_price=latest_close, error=None)
     except Exception as exc:  # pragma: no cover - yfinance failures vary by ticker/network state.
         return StockSnapshot(
-            metadata=StockMetadata(symbol=symbol, short_name=None, summary=None, exchange=None, current_price=None, market_cap=None, day_change_pct=None, fundamentals={}),
+            metadata=StockMetadata(symbol=symbol, short_name=None, summary=None, exchange=None, quote_type=None, fund_family=None, category=None, current_price=None, market_cap=None, day_change_pct=None, fundamentals={}),
             history=pd.DataFrame(),
             latest_price=None,
             error=f"Unable to fetch market data for {symbol}: {exc}",

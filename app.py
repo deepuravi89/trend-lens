@@ -7,7 +7,9 @@ import streamlit as st
 from components.charts import render_chart_suite
 from components.inputs import render_position_inputs, render_ticker_input
 from components.score_cards import render_header, render_score_section
+from components.watchlist import render_watchlist_section
 from services.advisor import build_position_advice
+from services.catalysts import get_catalyst_summary
 from services.market_data import get_stock_snapshot
 from services.scoring import build_score_bundle, finalize_total_score
 
@@ -340,26 +342,33 @@ def main() -> None:
     inject_styles()
     render_header()
 
-    ticker = render_ticker_input()
-    position_inputs = render_position_inputs()
+    deep_dive_tab, watchlist_tab = st.tabs(["Deep Dive", "Watchlist"])
 
-    if not ticker:
-        st.info("Enter a ticker to load the dashboard.")
-        return
+    with deep_dive_tab:
+        ticker = render_ticker_input()
+        position_inputs = render_position_inputs("deep_dive")
 
-    with st.spinner(f"Loading {ticker.upper()}..."):
-        snapshot = get_stock_snapshot(ticker)
+        if not ticker:
+            st.info("Enter a ticker to load the dashboard.")
+        else:
+            with st.spinner(f"Loading {ticker.upper()}..."):
+                snapshot = get_stock_snapshot(ticker)
 
-    if snapshot.error:
-        st.error(snapshot.error)
-        return
+            if snapshot.error:
+                st.error(snapshot.error)
+            else:
+                scores = build_score_bundle(snapshot)
+                advice = build_position_advice(snapshot, scores, position_inputs)
+                scores = finalize_total_score(scores, advice.score)
+                catalyst = get_catalyst_summary(ticker, snapshot)
 
-    scores = build_score_bundle(snapshot)
-    advice = build_position_advice(snapshot, scores, position_inputs)
-    scores = finalize_total_score(scores, advice.score)
+                render_score_section(snapshot, scores, advice, catalyst)
+                render_chart_suite(snapshot)
 
-    render_score_section(snapshot, scores, advice)
-    render_chart_suite(snapshot)
+    with watchlist_tab:
+        position_inputs = render_position_inputs("watchlist")
+        render_watchlist_section(position_inputs)
+
     st.caption("Trend Lens is a local decision-support tool for personal investing research. It is not financial advice.")
 
 

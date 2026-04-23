@@ -5,6 +5,7 @@ from __future__ import annotations
 import streamlit as st
 
 from services.advisor import PositionAdvice
+from services.catalysts import CatalystSummary
 from services.market_data import StockSnapshot
 from services.scoring import FactorScore, ScoreBundle, TechnicalSetup
 from utils.formatters import (
@@ -36,6 +37,12 @@ VERDICT_CLASSES = {
     "Recovery Setup": "blue",
     "Mixed Setup": "amber",
     "Weak Downtrend": "red",
+    "Positive": "green",
+    "Neutral": "blue",
+    "Caution": "amber",
+    "Fresh": "green",
+    "Recent": "blue",
+    "Stale": "amber",
 }
 
 
@@ -44,7 +51,7 @@ def render_header() -> None:
     st.markdown("", unsafe_allow_html=True)
 
 
-def render_score_section(snapshot: StockSnapshot, scores: ScoreBundle, advice: PositionAdvice) -> None:
+def render_score_section(snapshot: StockSnapshot, scores: ScoreBundle, advice: PositionAdvice, catalyst: CatalystSummary) -> None:
     """Render the upgraded summary, factor cards, and position math panel."""
     render_top_summary(snapshot, scores)
 
@@ -79,6 +86,7 @@ def render_score_section(snapshot: StockSnapshot, scores: ScoreBundle, advice: P
         render_position_math_panel(advice)
     with explain_col:
         render_detail_explainer(scores)
+    render_catalyst_card(catalyst)
     render_metric_guide()
 
 
@@ -258,6 +266,49 @@ def render_position_math_panel(advice: PositionAdvice) -> None:
         ),
         unsafe_allow_html=True,
     )
+
+
+def render_catalyst_card(catalyst: CatalystSummary) -> None:
+    """Render the compact catalyst layer card."""
+    positives = "".join(f"<li>{item}</li>" for item in catalyst.positive_points[:3])
+    risks = "".join(f"<li>{item}</li>" for item in catalyst.risk_points[:3])
+    title = "Market Context" if catalyst.asset_context == "ETF context" else "Catalyst Layer"
+    context_note_html = (
+        f'<div class="metric-caption" style="margin-top:0.45rem;">{catalyst.context_note}</div>'
+        if catalyst.context_note
+        else ""
+    )
+    positive_label = "Supportive Backdrop" if catalyst.asset_context == "ETF context" else "Supportive Context"
+    st.markdown(
+        (
+            '<div class="detail-card" style="margin-top:1.1rem;">'
+            f'<div class="section-title">{title}</div>'
+            '<div style="display:flex; gap:0.45rem; flex-wrap:wrap; align-items:center;">'
+            f'<div class="pill {VERDICT_CLASSES.get(catalyst.bias, "blue")}" style="margin-top:0;">Catalyst: {catalyst.bias}</div>'
+            f'<div class="pill {VERDICT_CLASSES.get(catalyst.freshness_label, "blue")}" style="margin-top:0;">{catalyst.freshness_label}</div>'
+            "</div>"
+            f"{context_note_html}"
+            f'<div class="metric-label" style="margin-top:0.9rem;">{positive_label}</div>'
+            f'<ul class="explanation-list">{positives}</ul>'
+            '<div class="metric-label" style="margin-top:0.9rem;">Risks To Watch</div>'
+            f'<ul class="explanation-list">{risks}</ul>'
+            "</div>"
+        ),
+        unsafe_allow_html=True,
+    )
+    if catalyst.top_events:
+        with st.expander("Recent catalyst items", expanded=False):
+            items_html = "".join(
+                (
+                    '<div class="metric-guide-item">'
+                    f'<div class="factor-name">{event.title}</div>'
+                    f'<div class="metric-caption">{event.source} • {event.category.replace("_", " ")} • {event.confidence} confidence</div>'
+                    f'<div class="metric-guide-why">{event.summary}</div>'
+                    "</div>"
+                )
+                for event in catalyst.top_events[:5]
+            )
+            st.markdown(items_html, unsafe_allow_html=True)
 
 
 def render_detail_explainer(scores: ScoreBundle) -> None:

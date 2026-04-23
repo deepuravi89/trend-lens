@@ -20,6 +20,8 @@ It brings together:
 * Signal interpretation (technical + fundamental)
 * Portfolio context (position sizing)
 * Clear action bias (Add / Hold / Trim)
+* Ranked watchlist review
+* Recent catalyst context
 
 ---
 
@@ -59,6 +61,8 @@ Trend Lens evaluates a stock from three perspectives:
 * 🎯 **Total Score (out of 100)**
 * 🧭 **Setup Classification**
 * 📌 **Actionable Recommendation**
+* 👀 **Watchlist ranking dashboard**
+* 📰 **Catalyst Layer**
 
 ---
 
@@ -88,6 +92,75 @@ Trend Lens simplifies charts into intuitive setup types:
 | **Hold**            | No strong action needed         |
 | **Trim**            | Oversized or weakening          |
 | **Avoid New Buy**   | Weak setup                      |
+
+---
+
+## 👀 Watchlist
+
+Trend Lens now includes a watchlist that acts like a ranked action dashboard, not just a saved ticker list.
+
+For each name, the watchlist shows:
+
+* Ticker
+* Company
+* Total score
+* Technical score
+* Fundamental score
+* Setup
+* Recommendation
+* Confidence
+* Catalyst bias
+* Optional note / thesis
+
+If you add ownership context, it can also show:
+
+* Current allocation
+* Room to add
+
+By default, the watchlist ranks names by:
+
+1. Total score
+2. Recommendation priority
+3. Confidence
+4. Catalyst bias
+
+This helps surface which stock deserves attention first.
+
+---
+
+## 📰 Catalyst Layer
+
+The Catalyst Layer adds lightweight recent context for each stock.
+
+It does **not** replace the core score.
+It supports the main analysis with a simple read on recent developments.
+
+For individual stocks, the Catalyst Layer leans more on company-specific events.
+For ETFs, it leans more on index, sector, and market context so broad funds do not look artificially empty when company-style news is sparse.
+
+For each stock, Trend Lens shows:
+
+* `Catalyst bias`: **Positive / Neutral / Caution**
+* `Freshness`: **Fresh / Recent / Stale**
+* Supportive catalyst bullets
+* Risk bullets
+* Optional recent-item expander
+
+### Catalyst Bias Meaning
+
+| Bias         | Meaning |
+| ------------ | ------- |
+| **Positive** | Recent news looks broadly supportive |
+| **Neutral**  | News is mixed, sparse, or not strong enough to lean either way |
+| **Caution**  | Recent developments lean negative or raise near-term risk |
+
+### Freshness Windows
+
+| Label      | Meaning |
+| ---------- | ------- |
+| **Fresh**  | 0–3 days old |
+| **Recent** | 4–10 days old |
+| **Stale**  | 11–21 days old or sparse |
 
 ---
 
@@ -125,6 +198,7 @@ Search by ticker or company name.
 * Score
 * Verdict
 * Confidence
+* Quick setup / recommendation context
 
 ### 3. Check Technical Setup
 
@@ -153,6 +227,11 @@ Use:
 
 * Recommendation
 * Position Math panel
+* Catalyst Layer
+
+### 7. Review the Watchlist
+
+Use the Watchlist tab to compare multiple names, rank them by opportunity, and decide which stock deserves a deeper look first.
 
 ---
 
@@ -172,6 +251,8 @@ Use:
 * Rule-based model (not predictive)
 * Depends on Yahoo Finance (`yfinance`)
 * Some data may be incomplete
+* Catalyst coverage can be sparse or noisy depending on the ticker and recent news flow
+* Catalyst bias is a context layer, not a sentiment engine or prediction model
 * Not personalized financial advice
 
 ---
@@ -202,7 +283,6 @@ python3 -m pytest
 
 Planned improvements:
 
-* 📌 Watchlist & multi-stock comparison
 * 📊 Historical score tracking
 * 📈 Relative strength vs index
 * ⚡ Performance optimization
