@@ -6,7 +6,13 @@ from datetime import datetime, timedelta, timezone
 
 import pandas as pd
 
-from services.catalysts import CatalystEvent, build_catalyst_summary, classify_freshness, detect_asset_type
+from services.catalysts import (
+    CatalystEvent,
+    build_catalyst_summary,
+    classify_freshness,
+    detect_asset_type,
+    format_event_date,
+)
 from services.market_data import StockMetadata, StockSnapshot
 
 
@@ -33,22 +39,24 @@ def test_classify_freshness_windows() -> None:
 def test_catalyst_summary_resolves_positive_bias() -> None:
     summary = build_catalyst_summary(
         [
-            make_event(polarity="positive", days_old=1, summary="Recent earnings context leans supportive."),
-            make_event(polarity="positive", days_old=2, summary="Recent analyst activity leans supportive."),
+            make_event(polarity="positive", days_old=1, summary="Recent earnings-related coverage appears supportive."),
+            make_event(polarity="positive", days_old=2, summary="Analyst activity appears supportive."),
         ]
     )
     assert summary.bias == "Positive"
     assert summary.freshness_label == "Fresh"
     assert summary.positive_points
+    assert "supportive" in (summary.primary_read or "").lower()
 
 
 def test_catalyst_summary_resolves_caution_bias() -> None:
     summary = build_catalyst_summary(
-        [make_event(polarity="caution", days_old=4, summary="Recent guidance language leans cautionary.")]
+        [make_event(polarity="caution", days_old=4, summary="Recent earnings-related coverage looks cautionary.")]
     )
     assert summary.bias == "Caution"
     assert summary.freshness_label == "Recent"
     assert summary.risk_points
+    assert "cautionary" in (summary.primary_read or "").lower()
 
 
 def test_catalyst_summary_handles_missing_events() -> None:
@@ -56,6 +64,7 @@ def test_catalyst_summary_handles_missing_events() -> None:
     assert summary.bias == "Neutral"
     assert summary.freshness_label == "Stale"
     assert summary.top_events == []
+    assert summary.primary_read is not None
 
 
 def test_catalyst_summary_uses_snapshot_context_when_news_is_sparse() -> None:
@@ -86,6 +95,7 @@ def test_catalyst_summary_uses_snapshot_context_when_news_is_sparse() -> None:
     assert summary.freshness_label == "Stale"
     assert any("growth" in item.lower() or "quality" in item.lower() for item in summary.positive_points)
     assert any("valuation" in item.lower() for item in summary.risk_points)
+    assert "light" in (summary.primary_read or "").lower()
 
 
 def make_snapshot(*, symbol: str, quote_type: str | None, short_name: str, category: str | None, fund_family: str | None, price: float, sma50: float, sma200: float, rsi: float) -> StockSnapshot:
@@ -145,7 +155,8 @@ def test_etf_catalyst_summary_constructive_broad_etf() -> None:
     summary = build_catalyst_summary([], snapshot)
     assert summary.asset_context == "ETF context"
     assert summary.bias == "Positive"
-    assert any("broad market" in item.lower() for item in summary.positive_points)
+    assert any("broad" in item.lower() for item in summary.positive_points)
+    assert "broad market backdrop" in (summary.primary_read or "").lower()
 
 
 def test_etf_catalyst_summary_mixed_growth_etf() -> None:
@@ -164,6 +175,7 @@ def test_etf_catalyst_summary_mixed_growth_etf() -> None:
     assert summary.asset_context == "ETF context"
     assert summary.bias == "Neutral"
     assert any("growth" in item.lower() for item in summary.positive_points + summary.risk_points)
+    assert "mega-cap" in " ".join(summary.positive_points + summary.risk_points + [summary.primary_read or ""]).lower()
 
 
 def test_etf_catalyst_summary_weak_sector_etf() -> None:
@@ -200,7 +212,25 @@ def test_stock_catalyst_summary_still_uses_stock_logic() -> None:
     assert summary.asset_context == "Stock context"
 
 
-def test_uncertain_asset_type_defaults_gracefully() -> None:
+def test_stock_catalyst_uses_event_specific_wording() -> None:
+    summary = build_catalyst_summary(
+        [
+            CatalystEvent(
+                ticker="TSLA",
+                title="Tesla earnings beat expectations as margins stabilize",
+                source="Reuters",
+                published_at=(datetime.now(timezone.utc) - timedelta(days=1)).isoformat(),
+                category="earnings",
+                polarity="positive",
+                confidence="High",
+                summary="Recent earnings-related coverage appears supportive.",
+            )
+        ]
+    )
+    assert any("earnings" in item.lower() for item in summary.positive_points)
+
+
+def test_unknown_asset_type_defaults_gracefully() -> None:
     snapshot = make_snapshot(
         symbol="TEST",
         quote_type=None,
@@ -213,3 +243,11 @@ def test_uncertain_asset_type_defaults_gracefully() -> None:
         rsi=55,
     )
     assert detect_asset_type(snapshot) == "stock"
+
+
+def test_format_event_date_handles_bad_values() -> None:
+    assert format_event_date("bad-date") == "Date unavailable"
+
+
+def test_format_event_date_returns_compact_date() -> None:
+    assert "2026" in format_event_date("2026-04-24T10:00:00+00:00")

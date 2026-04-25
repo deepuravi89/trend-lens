@@ -9,12 +9,13 @@ CATALYST_RECENCY_DAYS = {
 }
 
 CATALYST_CATEGORY_KEYWORDS = {
-    "earnings": ["earnings", "revenue", "eps", "beat", "miss", "guidance"],
-    "guidance": ["guidance", "outlook", "forecast"],
+    "earnings": ["earnings", "revenue", "eps", "beat", "miss", "quarter", "results"],
+    "guidance": ["guidance", "outlook", "forecast", "raises outlook", "cuts outlook"],
     "analyst": ["analyst", "upgrade", "downgrade", "price target", "rating"],
-    "product": ["launch", "product", "shipment", "demand", "adoption", "contract", "deal"],
-    "regulation": ["regulation", "antitrust", "probe", "lawsuit", "approval", "ban"],
-    "sector": ["sector", "industry", "peer", "market demand"],
+    "product": ["launch", "product", "shipment", "demand", "adoption", "volume", "delivery", "order"],
+    "regulation": ["regulation", "antitrust", "probe", "lawsuit", "approval", "ban", "recall", "investigation", "legal"],
+    "m_and_a_contract": ["contract", "deal", "partnership", "acquisition", "merger", "award", "customer", "supply agreement"],
+    "sector": ["sector", "industry", "peer", "market demand", "industrywide", "industry-wide"],
 }
 
 POSITIVE_KEYWORDS = [
@@ -30,6 +31,11 @@ POSITIVE_KEYWORDS = [
     "approval",
     "record",
     "expands",
+    "accelerates",
+    "bullish",
+    "outperform",
+    "rebound",
+    "stronger",
 ]
 
 CAUTION_KEYWORDS = [
@@ -46,6 +52,11 @@ CAUTION_KEYWORDS = [
     "weak",
     "delay",
     "decline",
+    "cuts outlook",
+    "underperform",
+    "slumps",
+    "falling",
+    "cuts guidance",
 ]
 
 SOURCE_CONFIDENCE = {

@@ -5,7 +5,7 @@ from __future__ import annotations
 import streamlit as st
 
 from services.advisor import PositionAdvice
-from services.catalysts import CatalystSummary
+from services.catalysts import CatalystSummary, format_event_date
 from services.market_data import StockSnapshot
 from services.scoring import FactorScore, ScoreBundle, TechnicalSetup
 from utils.formatters import (
@@ -278,15 +278,23 @@ def render_catalyst_card(catalyst: CatalystSummary) -> None:
         if catalyst.context_note
         else ""
     )
-    positive_label = "Supportive Backdrop" if catalyst.asset_context == "ETF context" else "Supportive Context"
+    positive_label = "Supportive Backdrop" if catalyst.asset_context == "ETF context" else "Supportive Read"
+    bias_badge = f"Context: {catalyst.bias}" if catalyst.asset_context == "ETF context" else f"Catalyst: {catalyst.bias}"
+    freshness_badge = f"{catalyst.freshness_label} Read"
+    primary_read_html = (
+        f'<div class="section-subtitle" style="margin-top:0.7rem;">{catalyst.primary_read}</div>'
+        if catalyst.primary_read
+        else ""
+    )
     st.markdown(
         (
             '<div class="detail-card" style="margin-top:1.1rem;">'
             f'<div class="section-title">{title}</div>'
             '<div style="display:flex; gap:0.45rem; flex-wrap:wrap; align-items:center;">'
-            f'<div class="pill {VERDICT_CLASSES.get(catalyst.bias, "blue")}" style="margin-top:0;">Catalyst: {catalyst.bias}</div>'
-            f'<div class="pill {VERDICT_CLASSES.get(catalyst.freshness_label, "blue")}" style="margin-top:0;">{catalyst.freshness_label}</div>'
+            f'<div class="pill {VERDICT_CLASSES.get(catalyst.bias, "blue")}" style="margin-top:0;">{bias_badge}</div>'
+            f'<div class="pill {VERDICT_CLASSES.get(catalyst.freshness_label, "blue")}" style="margin-top:0;">{freshness_badge}</div>'
             "</div>"
+            f"{primary_read_html}"
             f"{context_note_html}"
             f'<div class="metric-label" style="margin-top:0.9rem;">{positive_label}</div>'
             f'<ul class="explanation-list">{positives}</ul>'
@@ -296,19 +304,21 @@ def render_catalyst_card(catalyst: CatalystSummary) -> None:
         ),
         unsafe_allow_html=True,
     )
-    if catalyst.top_events:
-        with st.expander("Recent catalyst items", expanded=False):
+    with st.expander("What Changed Recently", expanded=False):
+        if catalyst.top_events:
             items_html = "".join(
                 (
                     '<div class="metric-guide-item">'
                     f'<div class="factor-name">{event.title}</div>'
-                    f'<div class="metric-caption">{event.source} • {event.category.replace("_", " ")} • {event.confidence} confidence</div>'
+                    f'<div class="metric-caption">{format_event_date(event.published_at)} • {event.source} • {event.category.replace("_", " ")} • {event.polarity.title()} • {event.confidence} confidence</div>'
                     f'<div class="metric-guide-why">{event.summary}</div>'
                     "</div>"
                 )
                 for event in catalyst.top_events[:5]
             )
             st.markdown(items_html, unsafe_allow_html=True)
+        else:
+            st.caption("No high-signal recent items were available from the current feed.")
 
 
 def render_detail_explainer(scores: ScoreBundle) -> None:
