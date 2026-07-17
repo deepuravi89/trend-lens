@@ -196,3 +196,23 @@ def get_stock_snapshot(ticker: str) -> StockSnapshot:
             latest_price=None,
             error=f"Unable to fetch market data for {symbol}: {exc}",
         )
+
+
+@st.cache_data(ttl=1800, show_spinner=False)
+def get_history_with_indicators(ticker: str, start: str | None = None, end: str | None = None, period: str | None = None) -> pd.DataFrame:
+    """Fetch historical OHLCV data and attach the shared indicator set."""
+    symbol = ticker.strip().upper()
+    if not symbol:
+        return pd.DataFrame()
+
+    try:
+        stock = yf.Ticker(symbol)
+        if start or end:
+            history = stock.history(start=start, end=end, auto_adjust=False)
+        else:
+            history = stock.history(period=period or "1y", auto_adjust=False)
+        if history.empty:
+            return pd.DataFrame()
+        return add_indicators(history)
+    except Exception:
+        return pd.DataFrame()

@@ -63,6 +63,7 @@ Trend Lens evaluates a stock from three perspectives:
 * 📌 **Actionable Recommendation**
 * 👀 **Watchlist ranking dashboard**
 * 📰 **Catalyst Layer**
+* 🧪 **Strategy Lab / Backtest Lab**
 
 ---
 
@@ -161,6 +162,52 @@ For each stock, Trend Lens shows:
 | **Fresh**  | 0–3 days old |
 | **Recent** | 4–10 days old |
 | **Stale**  | 11–21 days old or sparse |
+
+---
+
+## 🧪 Strategy Lab / Backtest Lab
+
+Trend Lens now includes a simple Strategy Lab so you can test how a setup or rule set behaved historically.
+
+You can run daily-bar backtests for:
+
+* **Strong Uptrend**
+* **Recovery Setup**
+* **Pullback in Uptrend**
+* **Momentum Confirmation**
+* **Avoid Weakness baseline**
+
+For each test, Trend Lens shows:
+
+* Number of trades
+* Win rate
+* Average and median return
+* Best and worst trade
+* Average holding days
+* Max drawdown
+* Final simulated equity
+* Same-period benchmark return
+* Equity curve and trade log
+
+### How To Interpret It
+
+The Strategy Lab is for **research and education only**.
+
+It helps answer:
+
+> “If this setup happened historically, what usually happened next?”
+
+It does **not** tell you what will happen next time.
+
+### Important Limitations
+
+* Uses **daily data only**
+* Assumes **next-day entry after a signal**
+* Long-only in v1
+* Uses simplified slippage and exit handling
+* Ignores taxes and real-world execution constraints
+
+Treat it as historical context, not as a trading system.
 
 ---
 

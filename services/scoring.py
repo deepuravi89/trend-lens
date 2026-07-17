@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+import pandas as pd
+
 from config.scoring_config import (
     CONFIDENCE_THRESHOLDS,
     FUNDAMENTAL_FACTORS,
@@ -165,17 +167,7 @@ def score_technical(snapshot: StockSnapshot) -> SectionScore:
     score = min(sum(f.points for f in factors), SCORE_WEIGHTS["technical"])
     alignment_ratio = sum(1 for factor in factors if factor.points >= factor.max_points * 0.6) / len(factors)
     confidence = confidence_from_ratios(1.0, alignment_ratio)
-    setup = classify_technical_setup(
-        price=price,
-        sma50=sma50,
-        sma200=sma200,
-        rsi=rsi,
-        macd=macd,
-        signal=signal,
-        hist=hist,
-        dist_50=dist_50,
-        dist_200=dist_200,
-    )
+    setup = classify_technical_setup_from_row(latest)
 
     return SectionScore(
         score=score,
@@ -378,6 +370,21 @@ def classify_technical_setup(
         takeaway="Usually better for waiting than for forcing a new decision.",
         strength="Medium",
         action_bias="Hold",
+    )
+
+
+def classify_technical_setup_from_row(row: pd.Series) -> TechnicalSetup:
+    """Classify a technical setup from a historical indicator row."""
+    return classify_technical_setup(
+        price=float(row["Close"]),
+        sma50=float(row["SMA_50"]),
+        sma200=float(row["SMA_200"]),
+        rsi=float(row["RSI_14"]),
+        macd=float(row["MACD"]),
+        signal=float(row["MACD_SIGNAL"]),
+        hist=float(row["MACD_HIST"]),
+        dist_50=float(row["DIST_FROM_50DMA"]),
+        dist_200=float(row["DIST_FROM_200DMA"]),
     )
 
 

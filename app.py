@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import streamlit as st
 
+from components.backtest_lab import render_backtest_lab
 from components.charts import render_chart_suite
 from components.inputs import render_position_inputs, render_ticker_input
 from components.score_cards import render_header, render_score_section
@@ -342,7 +343,7 @@ def main() -> None:
     inject_styles()
     render_header()
 
-    deep_dive_tab, watchlist_tab = st.tabs(["Deep Dive", "Watchlist"])
+    deep_dive_tab, watchlist_tab, strategy_lab_tab = st.tabs(["Deep Dive", "Watchlist", "Strategy Lab"])
 
     with deep_dive_tab:
         ticker = render_ticker_input()
@@ -368,6 +369,9 @@ def main() -> None:
     with watchlist_tab:
         position_inputs = render_position_inputs("watchlist")
         render_watchlist_section(position_inputs)
+
+    with strategy_lab_tab:
+        render_backtest_lab()
 
     st.caption("Trend Lens is a local decision-support tool for personal investing research. It is not financial advice.")
 
