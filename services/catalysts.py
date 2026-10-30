@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from datetime import datetime, timezone
 
@@ -81,16 +82,21 @@ def categorize_event(title: str) -> str:
     """Infer a lightweight category from a headline."""
     normalized = title.lower()
     for category, keywords in CATALYST_CATEGORY_KEYWORDS.items():
-        if any(keyword in normalized for keyword in keywords):
+        if any(_has_keyword(normalized, keyword) for keyword in keywords):
             return category
     return "generic_news"
+
+
+def _has_keyword(text: str, keyword: str) -> bool:
+    """Match whole words (plus simple -s/-ed endings), so "win" does not match "window"."""
+    return re.search(rf"\b{re.escape(keyword)}(?:s|es|d|ed)?\b", text) is not None
 
 
 def classify_polarity(title: str) -> str:
     """Infer simple polarity from a headline."""
     normalized = title.lower()
-    positive_hits = sum(keyword in normalized for keyword in POSITIVE_KEYWORDS)
-    caution_hits = sum(keyword in normalized for keyword in CAUTION_KEYWORDS)
+    positive_hits = sum(_has_keyword(normalized, keyword) for keyword in POSITIVE_KEYWORDS)
+    caution_hits = sum(_has_keyword(normalized, keyword) for keyword in CAUTION_KEYWORDS)
     if caution_hits > positive_hits:
         return "caution"
     if positive_hits > caution_hits:

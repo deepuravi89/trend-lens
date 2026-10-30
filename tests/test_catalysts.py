@@ -251,3 +251,13 @@ def test_format_event_date_handles_bad_values() -> None:
 
 def test_format_event_date_returns_compact_date() -> None:
     assert "2026" in format_event_date("2026-04-24T10:00:00+00:00")
+
+
+def test_keyword_matching_uses_whole_words() -> None:
+    from services.catalysts import classify_polarity
+
+    assert classify_polarity("Company wins new contract") == "positive"
+    assert classify_polarity("Apple beats estimates and raises outlook") == "positive"
+    assert classify_polarity("New window display unveiled") == "neutral"
+    assert classify_polarity("Mission update from the CEO") == "neutral"
+    assert classify_polarity("Earnings missed expectations") == "caution"

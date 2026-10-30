@@ -62,6 +62,12 @@ def _coerce_float(value: object) -> float | None:
         return None
 
 
+def _debt_to_equity_ratio(value: object) -> float | None:
+    """Yahoo reports debt-to-equity as a percent (150 means 1.5x); convert it to a ratio."""
+    number = _coerce_float(value)
+    return None if number is None else number / 100
+
+
 def _safe_text(value: object) -> str | None:
     if isinstance(value, str) and value.strip():
         return value.strip()
@@ -165,7 +171,7 @@ def get_stock_snapshot(ticker: str) -> StockSnapshot:
             "forwardPE": _coerce_float(info.get("forwardPE")),
             "pegRatio": _coerce_float(info.get("pegRatio")),
             "returnOnEquity": _coerce_float(info.get("returnOnEquity")),
-            "debtToEquity": _coerce_float(info.get("debtToEquity")),
+            "debtToEquity": _debt_to_equity_ratio(info.get("debtToEquity")),
             "revenueGrowth": _coerce_float(info.get("revenueGrowth")),
             "earningsGrowth": _coerce_float(info.get("earningsGrowth")),
             "freeCashflow": _coerce_float(info.get("freeCashflow")),

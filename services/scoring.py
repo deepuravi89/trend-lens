@@ -458,6 +458,8 @@ def score_pe_factor(label: str, value: float | None, max_points: float, trailing
     key = "trailing_pe" if trailing else "forward_pe"
     if value is None:
         return missing_factor(key, label, max_points, "Unavailable from the current data feed; confidence is reduced.")
+    if value <= 0:
+        return FactorScore(key, label, 0.0, max_points, f"{label} is {format_number(value)}; negative earnings mean the company is not currently profitable on this measure.", "Unprofitable")
     low = FUNDAMENTAL_THRESHOLDS["pe_low"] if trailing else FUNDAMENTAL_THRESHOLDS["forward_pe_low"]
     fair = FUNDAMENTAL_THRESHOLDS["pe_fair"] if trailing else FUNDAMENTAL_THRESHOLDS["forward_pe_fair"]
     if value <= low:
@@ -472,6 +474,8 @@ def score_peg_factor(value: float | None) -> FactorScore:
     max_points = FUNDAMENTAL_FACTORS["peg_ratio"]
     if value is None:
         return missing_factor("peg_ratio", "PEG ratio", max_points, "Unavailable, so valuation-versus-growth is less certain.")
+    if value <= 0:
+        return FactorScore("peg_ratio", "PEG ratio", 0.0, max_points, f"PEG ratio is {format_number(value)}; a negative PEG comes from negative earnings or shrinking growth, so it is not a sign of value.", "Not meaningful")
     if value <= FUNDAMENTAL_THRESHOLDS["peg_good"]:
         return FactorScore("peg_ratio", "PEG ratio", max_points, max_points, f"PEG ratio is {format_number(value)}, a good balance between valuation and growth.", "Attractive")
     if value <= FUNDAMENTAL_THRESHOLDS["peg_ok"]:
@@ -496,6 +500,8 @@ def score_debt_factor(value: float | None) -> FactorScore:
     max_points = FUNDAMENTAL_FACTORS["debt_to_equity"]
     if value is None:
         return missing_factor("debt_to_equity", "Debt to equity", max_points, "Unavailable, so leverage risk is less visible.")
+    if value < 0:
+        return FactorScore("debt_to_equity", "Debt to equity", 0.0, max_points, f"Debt to equity is {format_number(value)}; negative shareholder equity is a balance-sheet red flag.", "Negative equity")
     if value <= FUNDAMENTAL_THRESHOLDS["debt_to_equity_low"]:
         return FactorScore("debt_to_equity", "Debt to equity", max_points, max_points, f"Debt to equity is {format_number(value)}, a healthy balance-sheet level.", "Healthy")
     if value <= FUNDAMENTAL_THRESHOLDS["debt_to_equity_ok"]:

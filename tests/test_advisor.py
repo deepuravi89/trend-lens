@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pandas as pd
 
-from services.advisor import PositionInputs, build_position_advice, derive_position_metrics
+from services.advisor import PositionInputs, base_quality_pct, build_position_advice, derive_position_metrics
 from services.market_data import StockMetadata, StockSnapshot
 from services.scoring import build_score_bundle
 
@@ -152,3 +152,83 @@ def test_target_position_is_clamped_to_max_cap() -> None:
     metrics = derive_position_metrics(100.0, make_inputs(target_position_size_pct=15, max_portfolio_allocation_pct=10))
     assert metrics.target_position_size_pct == 10
     assert metrics.target_was_clamped is True
+
+
+# --- v5 regressions -------------------------------------------------------
+
+
+def with_fundamental_score(scores, value: float):
+    from dataclasses import replace
+
+    return replace(scores, fundamental=replace(scores.fundamental, score=value))
+
+
+def test_add_threshold_uses_80_point_base() -> None:
+    # 36 technical + 29 fundamental = 65 of 80 (81%). Before v5 this was compared
+    # against 72 "out of 100" and always came back Hold.
+    snapshot = make_snapshot(price=100.0, rsi=55.0, dist_from_50=0.03)
+    scores = with_fundamental_score(build_score_bundle(snapshot), 29.0)
+    scores = replace_technical(scores, 36.0)
+    advice = build_position_advice(snapshot, scores, make_inputs(shares_owned=0, average_cost_basis=0, target_position_size_pct=None))
+
+    assert base_quality_pct(scores) == 81.25
+    assert advice.technical_setup.label == "Strong Uptrend"
+    assert advice.recommendation in {"Add", "Add Small"}
+
+
+def replace_technical(scores, value: float):
+    from dataclasses import replace
+
+    return replace(scores, technical=replace(scores.technical, score=value))
+
+
+def test_position_score_does_not_double_count_stock_quality() -> None:
+    snapshot = make_snapshot(price=100.0, rsi=55.0, dist_from_50=0.03)
+    base = build_score_bundle(snapshot)
+    inputs = make_inputs(shares_owned=5, target_position_size_pct=6)
+
+    strong = build_position_advice(snapshot, with_fundamental_score(base, 38.0), inputs)
+    weak = build_position_advice(snapshot, with_fundamental_score(base, 12.0), inputs)
+
+    assert strong.score == weak.score
+    assert strong.score <= 20
+    assert all(driver.label != "Score quality" for driver in strong.score_drivers)
+
+
+def test_trim_large_gain_at_full_size_when_extended() -> None:
+    snapshot = make_snapshot(price=110.0, rsi=74.0, dist_from_50=0.12)
+    scores = build_score_bundle(snapshot)
+    # 70 shares x $110 = 7.7% of the portfolio against an 8% target, up 37%.
+    advice = build_position_advice(snapshot, scores, make_inputs(shares_owned=70, average_cost_basis=80))
+
+    assert advice.recommendation == "Trim"
+    assert "gain" in advice.explanation.lower()
+
+
+def make_weak_snapshot() -> StockSnapshot:
+    snapshot = make_snapshot(price=82.0, rsi=34.0, dist_from_50=-0.09)
+    snapshot.history.loc[:, "SMA_50"] = [92.0, 91.0, 90.0]
+    snapshot.history.loc[:, "SMA_200"] = [108.0, 106.0, 104.0]
+    snapshot.history.loc[:, "MACD"] = [-0.6, -0.8, -1.0]
+    snapshot.history.loc[:, "MACD_SIGNAL"] = [-0.4, -0.5, -0.7]
+    snapshot.history.loc[:, "MACD_HIST"] = [-0.2, -0.3, -0.3]
+    return snapshot
+
+
+def test_trim_holder_when_trend_and_fundamentals_are_weak() -> None:
+    snapshot = make_weak_snapshot()
+    scores = with_fundamental_score(build_score_bundle(snapshot), 15.0)
+
+    holder = build_position_advice(snapshot, scores, make_inputs(shares_owned=10, average_cost_basis=95))
+    newcomer = build_position_advice(snapshot, scores, make_inputs(shares_owned=0, average_cost_basis=0))
+
+    assert holder.recommendation == "Trim"
+    assert newcomer.recommendation == "Avoid New Buy"
+
+
+def test_weak_trend_with_solid_fundamentals_is_not_trimmed() -> None:
+    snapshot = make_weak_snapshot()
+    scores = with_fundamental_score(build_score_bundle(snapshot), 30.0)
+    advice = build_position_advice(snapshot, scores, make_inputs(shares_owned=10, average_cost_basis=95))
+
+    assert advice.recommendation == "Avoid New Buy"

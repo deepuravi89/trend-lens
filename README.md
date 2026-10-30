@@ -57,13 +57,26 @@ Trend Lens evaluates a stock from three perspectives:
 
 * ✅ Technical Score (out of 40)
 * ✅ Fundamental Score (out of 40)
-* ✅ Position Advisor Score (out of 20)
+* ✅ Position Advisor Score (out of 20) — entry timing, sizing room, and reward vs. risk only
 * 🎯 **Total Score (out of 100)**
 * 🧭 **Setup Classification**
 * 📌 **Actionable Recommendation**
 * 👀 **Watchlist ranking dashboard**
 * 📰 **Catalyst Layer**
 * 🧪 **Strategy Lab / Backtest Lab**
+
+---
+
+## 🆕 What's New in v5
+
+Version 5 fixes scoring bugs that made the app recommend **Hold** for almost everything:
+
+* **Add is reachable again.** The advisor decides before its own 20 points are added, so its thresholds (72 / 82 / 58 / 45) are now read as a percent of the 80-point technical + fundamental score instead of a 100-point total.
+* **No double counting.** The Position Advisor Score no longer re-rewards the stock's technical/fundamental score. It is now entry timing (0–8) + sizing room (0–8) + reward vs. risk (0–4).
+* **Debt-to-equity units.** Yahoo reports this as a percent (150 = 1.5x). It is now converted to a ratio, so healthy balance sheets are no longer all marked "Heavy".
+* **Negative ratios.** A negative P/E or PEG (losses) no longer scores as "Attractive", and negative shareholder equity is flagged.
+* **Trim works for holders.** Trim now fires when a position is over your cap (unless it is a Strong Uptrend), when a large gain (20%+) in a full-size position is also extended, or when both trend and fundamentals are weak.
+* **Cleaner catalyst keywords.** Headline keywords match whole words, so "win" no longer matches "window".
 
 ---
 
@@ -91,7 +104,7 @@ Trend Lens simplifies charts into intuitive setup types:
 | **Add Small**       | Decent setup, measured approach |
 | **Add on Pullback** | Strong but extended             |
 | **Hold**            | No strong action needed         |
-| **Trim**            | Oversized or weakening          |
+| **Trim**            | Oversized, a large extended gain at full size, or weak trend + weak fundamentals |
 | **Avoid New Buy**   | Weak setup                      |
 
 ---

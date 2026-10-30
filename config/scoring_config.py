@@ -69,10 +69,13 @@ POSITION_THRESHOLDS = {
     "trim_gain_pct": 0.2,
     "deep_drawdown_pct": -0.12,
     "small_add_fraction": 0.35,
+    # These four are percents of the technical + fundamental score (out of 80),
+    # because the advisor decides before its own 20 points are added.
     "min_add_score": 72,
     "strong_add_score": 82,
     "hold_floor": 58,
     "trim_floor": 45,
+    "weak_fundamental_floor": 22,
     "oversized_buffer_pct": 0.002,
     "near_target_buffer_pct": 0.85,
     "limited_room_pct_of_portfolio": 0.015,

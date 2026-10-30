@@ -178,3 +178,33 @@ def test_sparse_fundamental_data_reduces_confidence() -> None:
     assert scores.fundamental.confidence == "Low"
     assert scores.fundamental.completeness_ratio == 0
     assert scores.fundamental.score <= 2
+
+
+# --- v5 regressions -------------------------------------------------------
+
+from services.market_data import _debt_to_equity_ratio  # noqa: E402
+from services.scoring import score_debt_factor, score_peg_factor, score_pe_factor  # noqa: E402
+
+
+def test_yahoo_debt_to_equity_percent_is_converted_to_ratio() -> None:
+    # Yahoo returns MSFT as ~12.2, meaning 0.122x.
+    assert round(_debt_to_equity_ratio(12.157), 5) == 0.12157
+    assert _debt_to_equity_ratio(None) is None
+    assert score_debt_factor(_debt_to_equity_ratio(12.157)).status == "Healthy"
+    assert score_debt_factor(_debt_to_equity_ratio(107.4)).status == "Manageable"
+
+
+def test_negative_pe_and_peg_do_not_score_as_cheap() -> None:
+    forward = score_pe_factor("Forward P/E", -7.0, 5, trailing=False)
+    peg = score_peg_factor(-0.5)
+
+    assert forward.points == 0
+    assert forward.status == "Unprofitable"
+    assert peg.points == 0
+    assert peg.status == "Not meaningful"
+
+
+def test_negative_equity_is_flagged() -> None:
+    factor = score_debt_factor(-2.0)
+    assert factor.points == 0
+    assert factor.status == "Negative equity"
