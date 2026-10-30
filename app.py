@@ -8,10 +8,13 @@ from components.backtest_lab import render_backtest_lab
 from components.charts import render_chart_suite
 from components.inputs import render_position_inputs, render_ticker_input
 from components.score_cards import render_header, render_score_section
+from components.score_history import render_score_history
 from components.watchlist import render_watchlist_section
 from services.advisor import build_position_advice
 from services.catalysts import get_catalyst_summary
+from services.market_context import build_market_context
 from services.market_data import get_stock_snapshot
+from services.score_history import record_score
 from services.scoring import build_score_bundle, finalize_total_score
 
 
@@ -338,12 +341,20 @@ def inject_styles() -> None:
     )
 
 
+def log_quietly(snapshot) -> None:
+    """Add today's call to the score history without interrupting the page."""
+    try:
+        record_score(snapshot)
+    except Exception:  # noqa: BLE001 - logging must never break the dashboard
+        pass
+
+
 def main() -> None:
     """Render the full Streamlit experience."""
     inject_styles()
     render_header()
 
-    deep_dive_tab, watchlist_tab, strategy_lab_tab = st.tabs(["Deep Dive", "Watchlist", "Strategy Lab"])
+    deep_dive_tab, watchlist_tab, strategy_lab_tab, history_tab = st.tabs(["Deep Dive", "Watchlist", "Strategy Lab", "Score History"])
 
     with deep_dive_tab:
         ticker = render_ticker_input()
@@ -362,8 +373,10 @@ def main() -> None:
                 advice = build_position_advice(snapshot, scores, position_inputs)
                 scores = finalize_total_score(scores, advice.score)
                 catalyst = get_catalyst_summary(ticker, snapshot)
+                context = build_market_context(snapshot.metadata.symbol, snapshot.history)
+                log_quietly(snapshot)
 
-                render_score_section(snapshot, scores, advice, catalyst)
+                render_score_section(snapshot, scores, advice, catalyst, context)
                 render_chart_suite(snapshot)
 
     with watchlist_tab:
@@ -372,6 +385,9 @@ def main() -> None:
 
     with strategy_lab_tab:
         render_backtest_lab()
+
+    with history_tab:
+        render_score_history()
 
     st.caption("Trend Lens is a local decision-support tool for personal investing research. It is not financial advice.")
 

@@ -8,7 +8,7 @@ import streamlit as st
 from services.advisor import PositionInputs
 from services.market_data import SearchMatch, search_tickers
 from services.watchlist import WatchlistEntry, WatchlistRow, build_watchlist_row, rank_watchlist_rows
-from utils.formatters import format_currency, format_currency_full, format_percent_plain
+from utils.formatters import format_currency, format_currency_full, format_percent, format_percent_plain
 
 
 STARTER_WATCHLIST = [
@@ -185,6 +185,8 @@ def _rows_to_frame(rows: list[WatchlistRow]) -> pd.DataFrame:
                 "Action": row.recommendation,
                 "Confidence": row.confidence,
                 "Catalyst": row.catalyst_bias,
+                "Earnings": ("⚠️ " if row.earnings_soon else "") + row.earnings_label,
+                "vs S&P 3M": format_percent(row.relative_3m),
                 "Own?": "Yes" if row.shares_owned > 0 else "No",
                 "Alloc %": format_percent_plain(row.current_allocation_pct) if row.current_allocation_pct is not None and row.shares_owned > 0 else "—",
                 "Add Room": format_currency_full(row.room_to_add) if row.room_to_add is not None and row.shares_owned > 0 else "—",

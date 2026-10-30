@@ -107,3 +107,10 @@ APP_COPY = {
         "much room you have to add before hitting your cap."
     ),
 }
+
+MARKET_CONTEXT = {
+    "benchmark": "SPY",
+    "earnings_warning_days": 7,
+    "relative_days_short": 63,  # ~3 months of trading days
+    "relative_days_long": 126,  # ~6 months
+}

@@ -6,6 +6,7 @@ import streamlit as st
 
 from services.advisor import PositionAdvice
 from services.catalysts import CatalystSummary, format_event_date
+from services.market_context import MarketContext
 from services.market_data import StockSnapshot
 from services.scoring import FactorScore, ScoreBundle, TechnicalSetup
 from utils.formatters import (
@@ -51,9 +52,15 @@ def render_header() -> None:
     st.markdown("", unsafe_allow_html=True)
 
 
-def render_score_section(snapshot: StockSnapshot, scores: ScoreBundle, advice: PositionAdvice, catalyst: CatalystSummary) -> None:
+def render_score_section(
+    snapshot: StockSnapshot,
+    scores: ScoreBundle,
+    advice: PositionAdvice,
+    catalyst: CatalystSummary,
+    context: MarketContext | None = None,
+) -> None:
     """Render the upgraded summary, factor cards, and position math panel."""
-    render_top_summary(snapshot, scores)
+    render_top_summary(snapshot, scores, advice, context)
 
     left, right = st.columns([1.8, 1], gap="large")
     with left:
@@ -90,11 +97,22 @@ def render_score_section(snapshot: StockSnapshot, scores: ScoreBundle, advice: P
     render_metric_guide()
 
 
-def render_top_summary(snapshot: StockSnapshot, scores: ScoreBundle) -> None:
+def render_top_summary(snapshot: StockSnapshot, scores: ScoreBundle, advice: PositionAdvice, context: MarketContext | None = None) -> None:
     """Render the above-the-fold summary area."""
     price = snapshot.latest_price or snapshot.metadata.current_price
     move = snapshot.metadata.day_change_pct
-    summary_state = VERDICT_CLASSES.get(scores.verdict, "blue")
+    # The headline shows the advisor's call, so it can never contradict the advisor card.
+    summary_state = VERDICT_CLASSES.get(advice.recommendation, "blue")
+    earnings_pill = ""
+    context_stats = ""
+    if context is not None:
+        if context.earnings_soon:
+            earnings_pill = f'<div class="pill red" style="margin-left:0.45rem; margin-top:0;">Earnings {context.earnings_label}</div>'
+        context_stats = (
+            f'{mini_stat("Next Earnings", context.earnings_label)}'
+            f'{mini_stat("vs S&amp;P 500 (3M)", format_percent(context.relative_3m))}'
+            f'{mini_stat("vs S&amp;P 500 (6M)", format_percent(context.relative_6m))}'
+        )
     summary_card = (
         '<div class="detail-card" style="margin-bottom:1.1rem;">'
         '<div style="display:flex; justify-content:space-between; gap:1rem; align-items:flex-start; flex-wrap:wrap;">'
@@ -106,10 +124,11 @@ def render_top_summary(snapshot: StockSnapshot, scores: ScoreBundle) -> None:
         "</div>"
         '<div style="min-width:220px; flex:0 1 280px;">'
         f'<div class="metric-label">Immediate Takeaway</div>'
-        f'<div class="pill {summary_state}" style="margin-top:0;">{scores.verdict}</div>'
+        f'<div class="pill {summary_state}" style="margin-top:0;">{advice.recommendation}</div>'
         f'<div class="pill {VERDICT_CLASSES.get(scores.confidence, "blue")}" style="margin-left:0.45rem; margin-top:0;">{scores.confidence} Confidence</div>'
+        f"{earnings_pill}"
         f'<div class="metric-value" style="margin-top:0.85rem;">{scores.total_score:.0f} / 100</div>'
-        '<div class="metric-caption" style="margin-top:0.55rem;">Verdict, confidence, and score are designed to be readable at a glance before you dive into the factor cards below.</div>'
+        '<div class="metric-caption" style="margin-top:0.55rem;">The call comes from the Position Advisor (setup, score, and your sizing). The score measures quality; the call is what to do now.</div>'
         "</div>"
         "</div>"
         '<div style="display:flex; flex-wrap:wrap; gap:0.75rem; margin-top:1.15rem;">'
@@ -117,6 +136,7 @@ def render_top_summary(snapshot: StockSnapshot, scores: ScoreBundle) -> None:
         f'{mini_stat("Daily Move", format_percent(move))}'
         f'{mini_stat("Ticker", snapshot.metadata.symbol)}'
         f'{mini_stat("Score Mix", f"{scores.technical.score:.0f}T / {scores.fundamental.score:.0f}F / {scores.position_score:.0f}P")}'
+        f"{context_stats}"
         "</div>"
         "</div>"
     )

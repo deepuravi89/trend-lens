@@ -67,6 +67,29 @@ Trend Lens evaluates a stock from three perspectives:
 
 ---
 
+## 🆕 What's New in v6
+
+* **Headline matches the advisor.** The top of the page now shows the Position Advisor's call (Add / Hold / Trim / …), so it can no longer say "Strong Buy Zone" next to a Hold.
+* **Earnings warning.** Shows the next earnings date, with a red flag when it is 7 days away or less. Also shown in the watchlist.
+* **Relative strength vs the S&P 500.** 3- and 6-month return compared with SPY, shown next to the score (not part of it).
+* **Score History tab.** Every stock you open is logged once a day with a neutral "new buyer" call (fixed $100k portfolio, no shares owned). After 1, 3 and 6 months the tab shows whether Add calls and high scores actually beat the S&P 500.
+
+To log a list of tickers daily without opening the app:
+
+```bash
+python3 scripts/log_scores.py AAPL MSFT KO
+```
+
+For example, with cron at 5pm on weekdays:
+
+```bash
+0 17 * * 1-5 cd /path/to/trend-lens && .venv/bin/python scripts/log_scores.py --file tickers.txt
+```
+
+History is saved locally in `data/score_history.csv` (not committed to git).
+
+---
+
 ## 🆕 What's New in v5
 
 Version 5 fixes scoring bugs that made the app recommend **Hold** for almost everything:
@@ -343,8 +366,8 @@ python3 -m pytest
 
 Planned improvements:
 
-* 📊 Historical score tracking
-* 📈 Relative strength vs index
+* 🧾 Thesis notes and sell rules per holding
+* 🏷 Sector-relative valuation
 * ⚡ Performance optimization
 
 ---

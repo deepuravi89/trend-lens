@@ -6,7 +6,9 @@ from dataclasses import dataclass
 
 from services.advisor import PositionInputs, build_position_advice
 from services.catalysts import CatalystSummary, get_catalyst_summary
+from services.market_context import MarketContext, build_market_context
 from services.market_data import StockSnapshot, get_stock_snapshot
+from services.score_history import record_score
 from services.scoring import build_score_bundle, finalize_total_score
 
 
@@ -38,6 +40,9 @@ class WatchlistRow:
     shares_owned: float
     current_allocation_pct: float | None
     room_to_add: float | None
+    earnings_label: str = "N/A"
+    earnings_soon: bool = False
+    relative_3m: float | None = None
 
 
 RECOMMENDATION_PRIORITY = {
@@ -80,10 +85,15 @@ def build_watchlist_row(entry: WatchlistEntry, base_inputs: PositionInputs) -> W
     advice = build_position_advice(snapshot, scores, effective_inputs)
     scores = finalize_total_score(scores, advice.score)
     catalyst = get_catalyst_summary(entry.ticker, snapshot)
-    return _row_from_pipeline(entry, snapshot, scores, advice, catalyst)
+    context = build_market_context(snapshot.metadata.symbol, snapshot.history)
+    try:
+        record_score(snapshot)
+    except Exception:  # noqa: BLE001 - logging must never break the watchlist
+        pass
+    return _row_from_pipeline(entry, snapshot, scores, advice, catalyst, context)
 
 
-def _row_from_pipeline(entry: WatchlistEntry, snapshot: StockSnapshot, scores, advice, catalyst: CatalystSummary) -> WatchlistRow:
+def _row_from_pipeline(entry: WatchlistEntry, snapshot: StockSnapshot, scores, advice, catalyst: CatalystSummary, context: MarketContext | None = None) -> WatchlistRow:
     return WatchlistRow(
         ticker=snapshot.metadata.symbol,
         company_name=snapshot.metadata.short_name or snapshot.metadata.symbol,
@@ -99,6 +109,9 @@ def _row_from_pipeline(entry: WatchlistEntry, snapshot: StockSnapshot, scores, a
         shares_owned=entry.shares_owned,
         current_allocation_pct=advice.metrics.current_allocation_pct,
         room_to_add=advice.metrics.remaining_room_to_add,
+        earnings_label=context.earnings_label if context else "N/A",
+        earnings_soon=context.earnings_soon if context else False,
+        relative_3m=context.relative_3m if context else None,
     )
 
 
